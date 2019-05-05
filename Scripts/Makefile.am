@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:28:34 2019
-#  Last Modified : <190505.0828>
+#  Last Modified : <190505.1024>
 #
 #  Description	
 #
@@ -43,4 +43,14 @@
 ##############################################################################
 
 
-EXTRA_DIST=FritzingPartsSVGEditor.tcl
+SCRIPTS=DynamicHelp.tcl FritzingPartsSVGEditor.tcl IconsAndImages.tcl \
+        mainwindow.tcl ParseXML.tcl ReadConfiguration.tcl snitbuttonbox.tcl \
+        snitCabWidgets.tcl snitdialog.tcl snitHTMLHelp.tcl snitLFs.tcl \
+        snitlistbox.tcl snitmainframe.tcl snitpagesmanager.tcl snitrotext.tcl \
+        snitscrollableframe.tcl snitScrollNotebook.tcl snitscrollw.tcl \
+        snitStdMenuBar.tcl snittree.tcl
+
+IMAGES=close.gif DeepwoodsBanner.gif new.gif open.gif print.gif save.gif \
+       openfold.png palette.png gray50.xbm info.xbm questhead.xbm unknown.xpm
+
+EXTRA_DIST=$(SCRIPTS) $(IMAGES)
