@@ -77,6 +77,13 @@ objcopy.params
 set250k.c
 set250k.nc
 openmrnpath.mk
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache
+configure
+config.log
+config.status
 
 #Mac OS X file system artifacts
 .DS_Store
