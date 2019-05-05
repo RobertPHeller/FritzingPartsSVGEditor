@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# make setup
+aclocal -I m4
+automake --gnu --add-missing --copy --force
+autoheader
+autoconf
+
+exit 0
