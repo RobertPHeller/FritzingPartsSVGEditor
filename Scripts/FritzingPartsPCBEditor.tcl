@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:53:10 2019
-#  Last Modified : <190507.1518>
+#  Last Modified : <190508.1308>
 #
 #  Description	
 #
@@ -40,6 +40,8 @@
 #
 #*****************************************************************************
 
+## @page FritzingPartsPCBEditor PCB Editor
+# TBD
 
 package require Tk
 package require tile
@@ -843,7 +845,47 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
     }
     method read {filename} {
-        tk_messageBox -type ok -icon info -message "Not implemented yet"
+        if {[catch {open $filename r} fp]} {
+            tk_messageBox -type ok -icon error -message [format {Could not open %s for reading: %s} $filename $fp]
+            return
+        }            
+        set xml [ParseXML %AUTO% [read $fp]]
+        close $fp
+        set svg [$xml getElementsByTagName svg]
+        $hull processSVGView [$svg attribute height] [$svg attribute width] [$svg attribute viewBox]
+        set groups [$svg getElementsByTagName g -depth 1]
+        set silkscreenGroup {}
+        set copper0Group {}
+        set copper1Group {}
+        foreach g $groups {
+            if {[$g attribute id] eq "silkscreen"} {
+                set silkscreenGroup $g
+            } elseif {[$g attribute id] eq "copper0"} {
+                set copper0Group $g
+            } elseif {[$g attribute id] eq "copper1"} {
+                set copper1Group $g
+            }
+        }
+        if {$silkscreenGroup eq "" &&
+            $copper0Group eq "" &&
+            $copper1Group eq ""} {
+            tk_messageBox -type ok -icon error -message "Silkscreen and copper groups not found!"
+            return
+        }
+        if {$silkscreenGroup ne ""} {
+            $self _processGroup $silkscreenGroup [list "silkscreen"] unrecognized
+        }
+        if {$copper0Group ne ""} {
+            $self _processGroup $copper0Group [list "copper0"] unrecognized
+        }
+        if {$copper1Group ne ""} {
+            $self _processGroup $copper1Group [list "copper1"] unrecognized
+        }
+        if {[info exists unrecognized]} {
+            # -- displayed unrecognized tags
+            parray unrecognized
+        }
+        $self _setClean
     }
     method write {filename} {
         if {[catch {open $filename w} fp]} {
@@ -858,25 +900,155 @@ snit::widgetadaptor PCBEditor {
         lassign $vp x1 y1 x2 y2
         set width [$hull cget -width]
         set height [$hull cget -height]
-        set emptySVG [format {<svg version="1.2" baseProfile="tiny" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0%s" y="0%s" width="%f%s" height="%f%s" viewBox="%f %f %f %f" xml:space="preserve" />} \
-                      $units $units $width $units $height $units $x1 $y1 $x2 $y2]
+        set emptySVG [format $emptySVGFormat $units $units $width $units \
+                      $height $units $x1 $y1 $x2 $y2]
 
         set newxml [ParseXML %AUTO% $emptySVG]
         set root [$newxml getElementsByTagName svg]
         set silkscreenGroup [SimpleDOMElement create %AUTO% -tag g -attributes [list id silkscreen]]
         $root addchild $silkscreenGroup
-        set silkitems [$hull find withtag "group=silkscreen"]
-        foreach i $silkitems {
-        }
         set copper0Group [SimpleDOMElement create %AUTO% -tag g -attributes [list id copper0]]
         $root addchild $copper0Group
         set copper1Group [SimpleDOMElement create %AUTO% -tag g -attributes [list id copper1]]
         $copper0Group addchild $copper1Group
-        set copperitems [$hull find withtag {group=copper0||group=copper1}]
-        foreach i $copperitems {
+        set items  [$hull find withtag {group=silkscreen||group=copper0||group=copper1}]
+        foreach i $items {
+            set tags [$hull itemcget $i -tags]
+            catch {unset pinno}
+            set attrs [getattrsfromtags $tags pinno]
+            set groups [getgroups $tags]
+            set gid [getgid $tags]
+            lappend attrs gid $gid
+            switch [$hull type $i] {
+                oval {
+                    # Circle
+                    if {[info exists pinno]} {
+                        # pins have pin numbers
+                        lappend attrs id [format {connector%dpin} $pinno]
+                    }
+                    set coords [$hull coords $i]
+                    lassign $coords x1 y1 x2 y2
+                    set xpos [expr {($x1+$x2)/2.0}]
+                    set ypos [expr {($y1+$y2)/2.0}]
+                    set radius [expr {($x2-$x1)/2.0}]
+                    lappend attrs cx $xpos cy $ypos r $radius
+                    set fill [$hull itemcget $i -fill]
+                    set outline [$hull itemcget $i -outline]
+                    set width [$hull itemcget $i -width]
+                    if {$fill ne ""} {
+                        lappend attrs fill $fill
+                    } else {
+                        lappend attrs fill none
+                        lappend attrs stroke $outline
+                        lappend attrs stroke-width $width
+                    }
+                    set ele [SimpleDOMElement create %AUTO% -tag circle -attributes $attrs]
+                    if {"copper1" in $groups} {
+                        $copper1Group addchild $ele
+                    } elseif {"copper0" in $groups} {
+                        $copper0Group addchild $ele
+                    } else {
+                        $silkscreenGroup addchild $ele
+                    }
+                }
+                rectangle {
+                    set coords [$hull coords $i]
+                    lassign $coords x1 y1 x2 y2
+                    lappend attrs x $x1 y $y1
+                    lappend attrs width [expr {$x2-$x1}] \
+                          height [expr {$y2-$y1}]
+                    set fill [$hull itemcget $i -fill]
+                    set outline [$hull itemcget $i -outline]
+                    set width [$hull itemcget $i -width]
+                    if {$fill ne ""} {
+                        lappend attrs fill $fill
+                    } else {
+                        lappend attrs fill none stroke $outline stroke-width $width
+                    }
+                    set ele [SimpleDOMElement create %AUTO% -tag rect \
+                             -attributes $attrs]
+                    if {"copper1" in $groups} {
+                        $copper1Group addchild $ele
+                    } elseif {"copper0" in $groups} {
+                        $copper0Group addchild $ele
+                    } else {
+                        $silkscreenGroup addchild $ele
+                    }
+                }
+                line {
+                    set coords [$hull coords $i]
+                    lassign $coords x1 y1 x2 y2
+                    lappend attrs x1 $x1 y1 $y1
+                    lappend attrs x2 $x2 y2 $y2
+                    set outline [$hull itemcget $i -outline]
+                    set width [$hull itemcget $i -width]
+                    lappend attrs stroke $outline stroke-width $width
+                    set ele [SimpleDOMElement create %AUTO% -tag line \
+                             -attributes $attrs]
+                    if {"copper1" in $groups} {
+                        $copper1Group addchild $ele
+                    } elseif {"copper0" in $groups} {
+                        $copper0Group addchild $ele
+                    } else {
+                        $silkscreenGroup addchild $ele
+                    }
+                }
+                arc {
+                    set coords [$hull coords $i]
+                    lassign $coords x1 y1 x2 y2
+                    set cx [expr {($x1+$x2)/2.0}]
+                    set cy [expr {($y1+$y2)/2.0}]
+                    set r  [expr {($x2-$x1)/2.0}]
+                    set fill [$hull itemcget $i -fill]
+                    set outline [$hull itemcget $i -outline]
+                    set width [$hull itemcget $i -width]
+                    if {$fill ne ""} {
+                        lappend attrs fill $fill
+                    } else {
+                        lappend attrs fill none stroke $outline stroke-width $width
+                    }
+                    set start [_radians [$hull itemcget $i -start]]
+                    set extent [_radians [$hull itemcget $i -extent]]
+                    set startX [expr {($r*cos($start))+$cx}]
+                    set startY [expr {($r*sin($start))+$cy}]
+                    set extentX [expr {($r*cos($extent+$start))+$cx}]
+                    set extentY [expr {($r*sin($start++$start))+$cy}]
+                    set pathData [format {M %f,%f A %f,%f 0 0 1 %f,%f z} \
+                                  $startX $startY $r $r $extentX $extentY]
+                    lappend attrs d "$pathData"
+                    set ele [SimpleDOMElement create %AUTO% -tag path \
+                             -attributes $attrs]
+                    if {"copper1" in $groups} {
+                        $copper1Group addchild $ele
+                    } elseif {"copper0" in $groups} {
+                        $copper0Group addchild $ele
+                    } else {
+                        $silkscreenGroup addchild $ele
+                    }
+                }
+                text {
+                    set coords [$hull coords $i]
+                    lassign $coords x y
+                    lappend attrs x $x y $y
+                    set fill [$hull itemcget $i -fill]
+                    lappend attrs fill $fill
+                    set font [$hull itemcget $i -font]
+                    FontMapping MapFromTk $font fontname size
+                    lappend attrs font-family "$fontname" font-size $size
+                    set ele [SimpleDOMElement create %AUTO% -tag text \
+                             -attributes $attrs]
+                    if {"copper1" in $groups} {
+                        $copper1Group addchild $ele
+                    } elseif {"copper0" in $groups} {
+                        $copper0Group addchild $ele
+                    } else {
+                        $silkscreenGroup addchild $ele
+                    }
+                    $ele setdata "[$hull itemcget $i -text]"
+                }
+            }
         }
-        puts $fp {<?xml version="1.0" encoding="utf-8"?>}
-        puts $fp "<!-- Generator: [file tail $::argv0] $Version::VERSION on $Version::target (PCBEditor) -->"
+        xmlheader $fp PCBEditor
         $newxml displayTree $fp
         close $fp
     }

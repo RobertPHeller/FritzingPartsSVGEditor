@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 15:59:34 2019
-#  Last Modified : <190507.2317>
+#  Last Modified : <190508.1318>
 #
 #  Description	
 #
@@ -39,6 +39,9 @@
 # 
 #
 #*****************************************************************************
+
+## @page FritzingPartsEditor Common GUI elements
+# TBD
 
 
 package require Tk
@@ -357,7 +360,7 @@ snit::macro CommonEditorFunctions {} {
     proc gettagsfromattrs {attrs} {
         set tags [list]
         foreach {k v} $attrs {
-            if {$k in {x y cx cy x1 x2 y1 y2 d r fill stroke stroke-width font-family font-size id}} {continue}
+            if {$k in {fpe:gid width height x y cx cy x1 x2 y1 y2 d r fill stroke stroke-width font-family font-size id}} {continue}
             lappend tags "${k}=${v}"
         }
         return $tags
@@ -375,6 +378,21 @@ snit::macro CommonEditorFunctions {} {
             }
         }
         return $attrs
+    }
+    proc getgid {tags} {
+        foreach t $tags {
+            if {[regexp {^fpe:gid=([[:digit:]]+)$} $t => gid] > 0} {return $gid}
+        }
+        return -1
+    }
+    proc getgroups {tags} {
+        set result [list]
+        foreach t $tags {
+            if {[regexp {^group=(.+)$} $t => group] > 0} {
+                lappend result $group
+            }
+        }
+        return $result
     }
     method _itemContextMenu {gid itemtype X Y} {
         #puts stderr "*** $self _itemContextMenu $gid $itemtype"
@@ -494,7 +512,7 @@ snit::macro CommonEditorFunctions {} {
         #$menu unpost;# Do I need this?
     }
     
-    method _setDirty {name1 name2 op} {
+    method _setDirty {args} {
         set _isdirty yes
         if {$options(-dirtyhandler) ne ""} {
             uplevel #0 $options(-dirtyhandler) $options(-dirtyhandlercontext) $_isdirty
@@ -509,6 +527,8 @@ snit::macro CommonEditorFunctions {} {
     
     method isDirty {} {return $_isdirty}
     
+    typevariable emptySVGFormat {<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:fpe="http://www.deepsoft.com/fpe" x="0%s" y="0%s" width="%f%s" height="%f%s" viewBox="%f %f %f %f" xml:space="preserve" />}
+    
     method clean {} {
         $hull delete !viewport
         set _gid 0
@@ -516,6 +536,213 @@ snit::macro CommonEditorFunctions {} {
         set _isdirty false
         if {$options(-dirtyhandler) ne ""} {
             uplevel #0 $options(-dirtyhandler) $options(-dirtyhandlercontext) $_isdirty
+        }
+    }
+    proc xmlheader {fp generatorType} {
+        puts $fp {<?xml version="1.0" encoding="utf-8"?>}
+        if {0} {
+        puts $fp {<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
+<!ATTLIST ":circle"
+  xmlns:fpe CDATA #FIXED "http://www.deepsoft.com/fpe"
+  fpe:gid CDATA #IMPLIED>
+<!ATTLIST ":rect"
+  xmlns:fpe CDATA #FIXED "http://www.deepsoft.com/fpe"
+  fpe:gid CDATA #IMPLIED>
+<!ATTLIST ":line"
+  xmlns:fpe CDATA #FIXED "http://www.deepsoft.com/fpe"
+  fpe:gid CDATA #IMPLIED>
+<!ATTLIST ":text"
+  xmlns:fpe CDATA #FIXED "http://www.deepsoft.com/fpe"
+  fpe:gid CDATA #IMPLIED>
+<!ATTLIST ":path"
+  xmlns:fpe CDATA #FIXED "http://www.deepsoft.com/fpe"
+  fpe:gid CDATA #IMPLIED>
+  ]>}
+}
+        puts $fp "<!-- Generator: [file tail $::argv0] $Version::VERSION on $Version::target ($generatorType) -->"
+    }
+    method _processGroup {group groups unrecname} {
+        upvar $unrecname unrecognized
+        foreach c [$group children] {
+            #puts stderr "*** $self read: c is $c, <[$c cget -tag]>"
+            set gid [$c attribute fpe:gid]
+            if {$gid ne ""} {
+                if {$gid > $_gid} {
+                    set _gid $gid
+                }
+            }
+            switch [$c cget -tag] {
+                g {
+                    set childgroup [$c attribute id]
+                    $self _processGroup $c [linsert $groups 0 $childgroup] unrecognized
+                }
+                rect {
+                    if {$gid eq ""} {
+                        incr _gid
+                        set gid $_gid
+                    }
+                    set tags [gettagsfromattrs [$c cget -attributes]]
+                    lappend tags "gid=$gid"
+                    foreach g $groups {
+                        lappend tags "group=$g"
+                    }
+                    lappend tags "type=rect"
+                    set x1 [$c attribute x]
+                    set y1 [$c attribute y]
+                    set x2 [expr {$x1+[$c attribute width]}]
+                    set y2 [expr {$y1+[$c attribute height]}]
+                    set fill [$c attribute fill]
+                    if {$fill eq "none"} {
+                        set fill {}
+                        set filled false
+                    } else {
+                        set filled true
+                    }
+                    set outline [$c attribute stroke]
+                    set width [$c attribute stroke-width]
+                    if {$filled} {
+                        $hull create rectangle $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline {} 
+                    } else {
+                        $hull create rectangle $x1 $y1 $x2 $y2 -tags $tags -fill {} -outline $outline -width $width
+                    }
+                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
+                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+                }
+                circle {
+                    if {$gid eq ""} {
+                        incr _gid
+                        set gid $_gid
+                    }
+                    set tags [gettagsfromattrs [$c cget -attributes]]
+                    lappend tags "gid=$gid"
+                    foreach g $groups {
+                        lappend tags "group=$g"
+                    }
+                    set id [$c attribute id]
+                    set ispin false
+                    if {$id ne {}} {
+                        if {[regexp {^connector([[:digit:]]+)pin$} $id => pinno] > 0} {
+                            lappend tags "pinno=$pinno"
+                            if {$pinno > $_pinno} {
+                                set _pinno $pinno
+                            }
+                            set ispin true
+                        }
+                    }
+                    if {$ispin} {
+                        lappend tags "type=pin"
+                    } else {
+                        lappend tags "type=circ"
+                    }
+                    set xpos [$c attribute cx]
+                    set ypos [$c attribute cy]
+                    set radius [$c attribute r]
+                    set fill [$c attribute fill]
+                    set outline [$c attribute stroke]
+                    set width [$c attribute strike-width]
+                    if {$width eq {}} {set width 0}
+                    set x1 [expr {$xpos-$radius}]
+                    set y1 [expr {$ypos-$radius}]
+                    set x2 [expr {$xpos+$radius}]
+                    set y2 [expr {$ypos+$radius}]
+                    if {$ispin} {
+                        $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline {}
+                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
+                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
+                    } else {
+                        $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline $outline -width $width
+                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
+                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+                    }
+                }
+                line {
+                    if {$gid eq ""} {
+                        incr _gid
+                        set gid $_gid
+                    }
+                    set tags [gettagsfromattrs [$c cget -attributes]]
+                    lappend tags "gid=$gid"
+                    foreach g $groups {
+                        lappend tags "group=$g"
+                    }
+                    lappend tags "type=line"
+                    set x1 [$c attribute x1]
+                    set y1 [$c attribute y1]
+                    set x2 [$c attribute x2]
+                    set y2 [$c attribute y2]
+                    set outline [$c attribute stroke]
+                    set width [$c attribute stroke-width]
+                    $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $outline -width $width
+                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
+                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+                }
+                text {
+                    if {$gid eq ""} {
+                        incr _gid
+                        set gid $_gid
+                    }
+                    set tags [gettagsfromattrs [$c cget -attributes]]
+                    lappend tags "gid=$gid"
+                    foreach g $groups {
+                        lappend tags "group=$g"
+                    }
+                    lappend tags "type=text"
+                    set x [$c attribute x]
+                    set y [$c attribute y]
+                    set fill [$c attribute fill]
+                    set font [FontMapping MapToTk [$c attribute font-family] [$c attribute font-size]]
+                    $hull create text $x $y -text [$c data] -font $font -tags $tags -fill $fill -anchor nw
+                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
+                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+                }
+                path {
+                    set pathData [$c attribute d]
+                    if {[regexp {^M[[:space:]]*([[:digit:].]+),([[:digit:].]+) A[[:space:]]*([[:digit:].]+),([[:digit:].]+) 0 0 1 ([[:digit:].]+),([[:digit:].]+) z$} => startX startY r1 r2 ententX extentY] > 0 &&
+                        abs($r1-$r2) < .00001} {
+                        if {$gid eq ""} {
+                            incr _gid
+                            set gid $_gid
+                        }
+                        set tags [gettagsfromattrs [$c cget -attributes]]
+                        lappend tags "gid=$gid"
+                        foreach g $groups {
+                            lappend tags "group=$g"
+                        }
+                        lappend tags "type=arc"
+                        set fill [$c attribute fill]
+                        if {$fill eq "none"} {
+                            set fill {}
+                            set arcstyle arc
+                            set outline [$c attribute stroke]
+                            set width [$c attribute strike-width]
+                        } else {
+                            set arcstyle pieslice
+                            set outline {}
+                            set width 0
+                        }
+                        _findCenter $startX $startY $extentX $extentY $r1 cx cy start extent
+                        set x1 [expr {$cx-$r1}]
+                        set y1 [expr {$cy-$r1}]
+                        set x2 [expr {$cx+$r1}]
+                        set y2 [expr {$cy+$r1}]
+                        $hull create arc $x1 $y1 $x2 $y2 -style $arcstyle -start $start -extent $extent -tags $tags -fill $fill -outline $outline -width $width
+                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
+                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+                    } else {
+                        incr unrecognized([$c cget -tag])
+                    }
+                }
+                default {
+                    incr unrecognized([$c cget -tag])
+                }
+            }
         }
     }
     
@@ -538,6 +765,7 @@ snit::macro CommonEditorFunctions {} {
         install canvascontextmenu using menu $win.canvascontextmenu \
               -tearoff no -title {Select item}
         trace add variable [myvar _gid] write [mymethod _setDirty]
+        $hull configure -setdirty [mymethod _setDirty]
     }
 }    
 
@@ -673,6 +901,7 @@ snit::widget FritzingPartsEditor {
         {ttk::button addarc -text "Arc" -image "[IconImage image small_addarc]" -compound right -command "[list $options(-parent) addarc]"}
         {ttk::button addtext -text "Text" -image "[IconImage image small_addtext]" -compound right -command "[list $options(-parent) addtext]"}
         {ttk::button setsize -text "Size" -image "[IconImage image small_setsize]" -compound right -command "[mymethod _setsize]"}
+        {ttk::button shrinkw -text "ShringWrap" -image "[IconImage image small_shrinkwrap]" -compound right -command "[mymethod _shrinkwrap]"}
         {ttk::menubutton zoom -text "Zoom 1:1" -menu $zoomMenu}
     }
     
@@ -683,7 +912,7 @@ snit::widget FritzingPartsEditor {
     component zoomMenu
     component setsizedialog
     delegate method * to canvas except {cget configure postscript xview yview 
-        coords scale create}
+        bbox coords scale create}
     delegate option -background to canvas
     delegate option -bg to canvas
     component toolbuttons
@@ -697,6 +926,7 @@ snit::widget FritzingPartsEditor {
     
     option -parent -default {} -readonly yes -type snit::window
     option -contextmenu -default {}
+    option -setdirty -default {}
     variable _zoomScale 1.0
     variable _vpscaleX 1.0
     variable _vpscaleY 1.0
@@ -805,6 +1035,22 @@ snit::widget FritzingPartsEditor {
         }
         return $result
     }
+    method bbox  {tagorid} {
+        if {$_zoomScale != 1} {
+            set inv [expr {1.0 / double($_zoomScale)}]
+            $canvas scale all 0 0 $inv $inv
+            set bbox [$canvas bbox $tagorid]
+            $canvas scale all 0 0 $_zoomScale $_zoomScale
+        } else {
+            set bbox [$canvas bbox $tagorid]
+        }
+        set result [list]
+        foreach {x y} $bbox {
+            lappend result [expr {$x / $_vpscaleX}] [expr {$y / $_vpscaleY}]
+        }
+        return $result
+    }
+        
     method create {args} {
         if {$_zoomScale != 1} {
             set inv [expr {1.0 / double($_zoomScale)}]
@@ -868,6 +1114,54 @@ snit::widget FritzingPartsEditor {
                     -units [$self cget -units]]
         if {[llength $result] == 0} {return}
         $self configurelist $result
+        if {$options(-setdirty) ne ""} {
+            uplevel #0 $options(-setdirty)
+        }
+        $self makeVpRect
+    }
+    method processSVGView {heightUnits widthUnits vp} {
+        if {[regexp {^([[:digit:].]+)(.+)$} $heightUnits => height units] > 0} {
+            $self configure -height $height
+            if {$units eq {mm}} {
+                $self configure -units mm
+            } elseif {$units eq {in}} {
+                $self configure -units inch
+            }
+        }
+        if {[regexp {^([[:digit:].]+)(.+)$} $widthUnits => width units] > 0} {
+            $self configure -width $width
+            if {$units eq {mm}} {
+                $self configure -units mm
+            } elseif {$units eq {in}} {
+                $self configure -units inch
+            }
+        }
+        $self configure -viewport $vp
+        $self makeVpRect
+    }
+    method _shrinkwrap {} {
+        #puts stderr "*** $self _shrinkwrap: original bbox (vp coords) is [$self bbox {!viewport}]"
+        set bbox [$canvas bbox {!viewport}]
+        #puts stderr "*** $self _shrinkwrap: original bbox (canvas coords) is $bbox"
+        lassign $bbox x1 y1 dummy1 dummy2
+        $canvas move {!viewport} [expr {0-$x1}] [expr {0-$y1}]
+        set bbox [$self bbox {!viewport}]
+        #puts stderr "*** $self _shrinkwrap: moved bbox (vp coords) is $bbox"
+        lassign $bbox dummy1 dummy2 objectWidth objectHeight
+        set vp [$self cget -viewport]
+        #puts stderr "*** $self _shrinkwrap: vp is $vp"
+        lassign $vp dummy1 dummy2 vpwidth vpheight
+        set scaleW [expr {double($objectWidth) / double($vpwidth)}]
+        set scaleH [expr {double($objectHeight) / double($vpheight)}]
+        #puts stderr "*** $self _shrinkwrap: size scaling: $scaleW,$scaleH"
+        set newwidth [expr {[$self cget -width]*$scaleW}]
+        set newheight [expr {[$self cget -height]*$scaleH}]
+        set newvp [list 0 0 [expr {$vpwidth*$scaleW}] [expr {$vpheight*$scaleH}]]
+        #puts stderr "*** $self _shrinkwrap: newwidth is $newwidth, newheight is $newheight, newvp is $newvp"
+        $self configure -viewport $newvp -width $newwidth -height $newheight
+        if {$options(-setdirty) ne ""} {
+            uplevel #0 $options(-setdirty)
+        }
         $self makeVpRect
     }
     method makeVpRect {} {
@@ -883,8 +1177,10 @@ snit::widget FritzingPartsEditor {
         set aspect   [expr {$vpyscale / $vpxscale}]
         #puts stderr "*** $self makeVpRect: aspect is $aspect"
         update idle
-        set ch [expr {[winfo reqheight $canvas] * $_zoomScale}]
-        set cw [expr {[winfo reqwidth  $canvas] * $_zoomScale}]
+        set inv [expr {1.0 / double($_zoomScale)}]
+        $canvas scale all 0 0 $inv $inv
+        set ch [winfo reqheight $canvas]
+        set cw [winfo reqwidth  $canvas]
         #puts stderr "*** $self makeVpRect: ch is $ch, cw is $cw"
         if {$ch < $cw} {
             set c $ch
@@ -895,6 +1191,7 @@ snit::widget FritzingPartsEditor {
         set _vpscaleX [expr {($c / $vpwidth) *  $aspect}]
         #puts stderr "*** $self makeVpRect: _vpscaleY is $_vpscaleY, _vpscaleX is $_vpscaleX"
         catch {$canvas delete viewport}
+        $canvas scale all 0 0 $_vpscaleX $_vpscaleY
         $self create rectangle $vp -tags viewport -fill {} \
               -outline black -dash .
         #puts stderr "*** $self makeVpRect ch = $ch, cw = $cw"
@@ -917,6 +1214,8 @@ snit::widget FritzingPartsEditor {
         set sr [list $srx1 $sry1 $srx2 $sry2]
         #puts stderr "*** $self makeVpRect: sr is $sr"
         $canvas configure -scrollregion $sr
+        $canvas scale all 0 0 $_zoomScale $_zoomScale
+        $self updateSR $canvas [winfo height $canvas] [winfo width $canvas]
     }
     method _contextMenu {x y} {
         #puts stderr "*** $self _contextMenu $x $y"

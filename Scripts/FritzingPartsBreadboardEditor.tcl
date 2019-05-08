@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:37:01 2019
-#  Last Modified : <190507.2322>
+#  Last Modified : <190508.1313>
 #
 #  Description	
 #
@@ -40,6 +40,8 @@
 #
 #*****************************************************************************
 
+## @page FritzingPartsBreadboardEditor Breadboard Editor
+# TDB
 
 package require Tk
 package require tile
@@ -880,28 +882,7 @@ snit::widgetadaptor BreadboardEditor {
         set xml [ParseXML %AUTO% [read $fp]]
         close $fp
         set svg [$xml getElementsByTagName svg]
-        array set documentAttrs [$svg cget -attributes]
-        if {[info exists documentAttrs(height)] &&
-            [regexp {^([[:digit:].]+)(.+)$} $documentAttrs(height) => height units] > 0} {
-            $self configure -height $height
-            if {$units eq {mm}} {
-                $self configure -units mm
-            } elseif {$units eq {in}} {
-                $self configure -units inch
-            }
-        }
-        if {[info exists documentAttrs(width)] &&
-            [regexp {^([[:digit:].]+)(.+)$} $documentAttrs(width) => width units] > 0} {
-            $self configure -width $width
-            if {$units eq {mm}} {
-                $self configure -units mm
-            } elseif {$units eq {in}} {
-                $self configure -units inch
-            }
-        }
-        if {[info exists documentAttrs(viewBox)]} {
-            $self configure -viewport $documentAttrs(viewBox)
-        }
+        $hull processSVGView [$svg attribute height] [$svg attribute width] [$svg attribute viewBox]
         set groups [$svg getElementsByTagName g -depth 1]
         set breadboardGroup {}
         foreach g $groups {
@@ -914,151 +895,7 @@ snit::widgetadaptor BreadboardEditor {
             tk_messageBox -type ok -icon error -message "Breadboard group not found!"
             return
         }
-        foreach c [$breadboardGroup children] {
-            #puts stderr "*** $self read: c is $c, <[$c cget -tag]>"
-            switch [$c cget -tag] {
-                rect {
-                    incr _gid
-                    set tags [gettagsfromattrs [$c cget -attributes]]
-                    lappend tags "gid=$_gid"
-                    lappend tags "group=breadboard"
-                    lappend tags "type=rect"
-                    set x1 [$c attribute x]
-                    set y1 [$c attribute y]
-                    set x2 [expr {$x1+[$c attribute width]}]
-                    set y2 [expr {$y1+[$c attribute height]}]
-                    set fill [$c attribute fill]
-                    if {$fill eq "none"} {
-                        set fill {}
-                        set filled false
-                    } else {
-                        set filled true
-                    }
-                    set outline [$c attribute stroke]
-                    set width [$c attribute stroke-width]
-                    if {$filled} {
-                        $hull create rectangle $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline {} 
-                    } else {
-                        $hull create rectangle $x1 $y1 $x2 $y2 -tags $tags -fill {} -outline $outline -width $width
-                    }
-                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
-                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
-                }
-                circle {
-                    incr _gid
-                    set tags [gettagsfromattrs [$c cget -attributes]]
-                    lappend tags "gid=$_gid"
-                    lappend tags "group=breadboard"
-                    set id [$c attribute id]
-                    set ispin false
-                    if {$id ne {}} {
-                        if {[regexp {^connector([[:digit:]]+)pin$} $id => pinno] > 0} {
-                            lappend tags "pinno=$pinno"
-                            if {$pinno > $_pinno} {
-                                set _pinno $pinno
-                            }
-                            set ispin true
-                        }
-                    }
-                    if {$ispin} {
-                        lappend tags "type=pin"
-                    } else {
-                        lappend tags "type=circ"
-                    }
-                    set xpos [$c attribute cx]
-                    set ypos [$c attribute cy]
-                    set radius [$c attribute r]
-                    set fill [$c attribute fill]
-                    set outline [$c attribute stroke]
-                    set width [$c attribute strike-width]
-                    if {$width eq {}} {set width 0}
-                    set x1 [expr {$xpos-$radius}]
-                    set y1 [expr {$ypos-$radius}]
-                    set x2 [expr {$xpos+$radius}]
-                    set y2 [expr {$ypos+$radius}]
-                    if {$ispin} {
-                        $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline {}
-                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
-                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
-                    } else {
-                        $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline $outline -width $width
-                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
-                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
-                    }
-                }
-                line {
-                    incr _gid
-                    set tags [gettagsfromattrs [$c cget -attributes]]
-                    lappend tags "gid=$_gid"
-                    lappend tags "group=breadboard"
-                    lappend tags "type=line"
-                    set x1 [$c attribute x1]
-                    set y1 [$c attribute y1]
-                    set x2 [$c attribute x2]
-                    set y2 [$c attribute y2]
-                    set outline [$c attribute stroke]
-                    set width [$c attribute stroke-width]
-                    $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $outline -width $width
-                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
-                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
-                }
-                text {
-                    incr _gid
-                    set tags [gettagsfromattrs [$c cget -attributes]]
-                    lappend tags "gid=$_gid"
-                    lappend tags "group=breadboard"
-                    lappend tags "type=text"
-                    set x [$c attribute x]
-                    set y [$c attribute y]
-                    set fill [$c attribute fill]
-                    set font [FontMapping MapToTk [$c attribute font-family] [$c attribute font-size]]
-                    $hull create text $x $y -text [$c data] -font $font -tags $tags -fill $fill -anchor nw
-                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
-                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
-                }
-                path {
-                    set pathData [$c attribute d]
-                    if {[regexp {^M[[:space:]]*([[:digit:].]+),([[:digit:].]+) A[[:space:]]*([[:digit:].]+),([[:digit:].]+) 0 0 1 ([[:digit:].]+),([[:digit:].]+) z$} => startX startY r1 r2 ententX extentY] > 0 &&
-                        abs($r1-$r2) < .00001} {
-                        incr _gid
-                        set tags [gettagsfromattrs [$c cget -attributes]]
-                        lappend tags "gid=$_gid"
-                        lappend tags "group=breadboard"
-                        lappend tags "type=arc"
-                        set fill [$c attribute fill]
-                        if {$fill eq "none"} {
-                            set fill {}
-                            set arcstyle arc
-                            set outline [$c attribute stroke]
-                            set width [$c attribute strike-width]
-                        } else {
-                            set arcstyle pieslice
-                            set outline {}
-                            set width 0
-                        }
-                        _findCenter $startX $startY $extentX $extentY $r1 cx cy start extent
-                        set x1 [expr {$cx-$r1}]
-                        set y1 [expr {$cy-$r1}]
-                        set x2 [expr {$cx+$r1}]
-                        set y2 [expr {$cy+$r1}]
-                        $hull create arc $x1 $y1 $x2 $y2 -style $arcstyle -start $start -extent $extent -tags $tags -fill $fill -outline $outline -width $width
-                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
-                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
-                    } else {
-                        incr unrecognized([$c cget -tag])
-                    }
-                }
-                default {
-                    incr unrecognized([$c cget -tag])
-                }
-            }
-        }
+        $self _processGroup $breadboardGroup [list "breadboard"] unrecognized
         if {[info exists unrecognized]} {
             # -- displayed unrecognized tags
             parray unrecognized
@@ -1078,8 +915,8 @@ snit::widgetadaptor BreadboardEditor {
         lassign $vp x1 y1 x2 y2
         set width [$hull cget -width]
         set height [$hull cget -height]
-        set emptySVG [format {<svg version="1.1" baseProfile="tiny" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0%s" y="0%s" width="%f%s" height="%f%s" viewBox="%f %f %f %f" xml:space="preserve" />} \
-                      $units $units $width $units $height $units $x1 $y1 $x2 $y2]
+        set emptySVG [format $emptySVGFormat $units $units $width $units \
+                      $height $units $x1 $y1 $x2 $y2]
 
         set newxml [ParseXML %AUTO% $emptySVG]
         set root [$newxml getElementsByTagName svg]
@@ -1090,6 +927,8 @@ snit::widgetadaptor BreadboardEditor {
             set tags [$hull itemcget $i -tags]
             catch {unset pinno}
             set attrs [getattrsfromtags $tags pinno]
+            set gid [getgid $tags]
+            lappend attrs fpe:gid $gid
             switch [$hull type $i] {
                 oval {
                     # Pin or Circle
@@ -1189,8 +1028,7 @@ snit::widgetadaptor BreadboardEditor {
                 }
             }
         }
-        puts $fp {<?xml version="1.0" encoding="utf-8"?>}
-        puts $fp "<!-- Generator: [file tail $::argv0] $Version::VERSION on $Version::target (BreadboardEditor) -->"
+        xmlheader $fp BreadboardEditor
         $newxml displayTree $fp
         close $fp
         $self _setClean

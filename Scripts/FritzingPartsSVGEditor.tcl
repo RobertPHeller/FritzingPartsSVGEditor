@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:29:23 2019
-#  Last Modified : <190507.2302>
+#  Last Modified : <190508.1312>
 #
 #  Description	
 #
@@ -59,6 +59,10 @@
 # </ol></li>
 # <li><a class="el" href="mainGUI.html">Main GUI</a></li>
 # <li><a class="el" href="preferences.html">Preferences</a></li>
+# <li><a class="el" href="FritzingPartsEditor.html">Common GUI elements</a></li>
+# <li><a class="el" href="FritzingPartsBreadboardEditor.html">Breadboard Editor</a></li>
+# <li><a class="el" href="FritzingPartsSchematicEditor.html">Schematic Editor</a></li>
+# <li><a class="el" href="FritzingPartsPCBEditor.html">PCB Editor</a></li>
 # <li><a class="el" href="help.html">Help</a></li>
 # <li><a class="el" href="Version.html">Version</a></li>
 # <li><a class="el" href="Copying.html">Copying</a><ol type="a">
@@ -268,12 +272,12 @@ snit::type FritzingPartsSVGEditor {
               -image $_clean -compound right
         ttk::notebook::enableTraversal $notebook
         $notebook select 0
+        $mainwindow showit
+        $type SplashWorkMessage "Done" 100
+        update idle
         if {[llength $argv] > 0} {
-            $type SplashWorkMessage "Loading files" 80
             $type _open [lindex $argv 0]
         }
-        $type SplashWorkMessage "Done" 100
-        $mainwindow showit
                         
     }
     typemethod SplashWorkMessage {message percent} {
@@ -373,10 +377,10 @@ snit::type FritzingPartsSVGEditor {
             $breadboardeditor read "${fileprefix}_Breadboard.svg"
         }
         if {[file readable "${fileprefix}_Schematic.svg"]} {
-            #$schematiceditor read "${fileprefix}_Schematic.svg"
+            $schematiceditor read "${fileprefix}_Schematic.svg"
         }
         if {[file readable "${fileprefix}_PCB.svg"]} {
-            #$pcbeditor read "${fileprefix}_PCB.svg"
+            $pcbeditor read "${fileprefix}_PCB.svg"
         }
         set _currentFilePrefix $fileprefix
     }
