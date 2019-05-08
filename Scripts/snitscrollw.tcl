@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Mon May 13 20:08:01 2013
-#  Last Modified : <160223.1434>
+#  Last Modified : <190505.1435>
 #
 #  Description	
 #
@@ -98,15 +98,19 @@ snit::widget ScrolledWindow {
         if {[info exists $widget] && [winfo exist $widget] &&
             $wid ne $widget} {
             grid remove $widget
-            $widget configure -xscrollcommand "" -yscrollcommand ""
+            if {$options(-managed)} {
+                $widget configure -xscrollcommand "" -yscrollcommand ""
+            }
         }
         set widget $wid
         grid $widget -in $win -row 1 -column 1 -sticky news
         $hscroll configure -command [list $widget xview]
         $vscroll configure -command [list $widget yview]
-        $widget configure \
-              -xscrollcommand [mymethod _set_hscroll] \
-              -yscrollcommand [mymethod _set_vscroll]
+        if {$options(-managed)} {
+            $widget configure \
+                  -xscrollcommand [mymethod _set_hscroll] \
+                  -yscrollcommand [mymethod _set_vscroll]
+        }
     }
     method _configScrolling {option value} {
         if {[info exists options($option)] && $options($option) ne $value} {

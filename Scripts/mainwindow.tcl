@@ -45,7 +45,6 @@
 package require snit
 package require Tk
 package require tile
-package require gettext
 package require MainFrame
 package require snitStdMenuBar
 package require ScrollWindow

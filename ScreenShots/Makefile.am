@@ -7,8 +7,8 @@
 #  Date          : $Date$
 #  Author        : $Author$
 #  Created By    : Robert Heller
-#  Created       : Sun May 5 08:28:34 2019
-#  Last Modified : <190507.1141>
+#  Created       : Sun May 5 12:54:52 2019
+#  Last Modified : <190505.1254>
 #
 #  Description	
 #
@@ -43,8 +43,4 @@
 ##############################################################################
 
 
-TCLFILES=$(wildcard *.tcl)
-
-IMAGES=$(wildcard *.gif) $(wildcard *.png) $(wildcard *.xpm) $(wildcard *.xbm)
-
-EXTRA_DIST=$(TCLFILES) $(IMAGES)
+EXTRA_DIST = 

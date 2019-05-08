@@ -7,8 +7,8 @@
 #  Date          : $Date$
 #  Author        : $Author$
 #  Created By    : Robert Heller
-#  Created       : Sun May 5 08:28:34 2019
-#  Last Modified : <190507.1141>
+#  Created       : Mon May 6 01:13:58 2019
+#  Last Modified : <190507.1150>
 #
 #  Description	
 #
@@ -43,8 +43,18 @@
 ##############################################################################
 
 
-TCLFILES=$(wildcard *.tcl)
+EXTRA_DIST=$(wildcard *.h)
+CLEANFILES = Version.tcl
 
-IMAGES=$(wildcard *.gif) $(wildcard *.png) $(wildcard *.xpm) $(wildcard *.xbm)
+Version.tcl : $(top_builddir)/config.status
+	echo '## @page Version Version' >Version.tcl
+	echo "# Version is $(VERSION) on $(target)." >>Version.tcl
+	echo "#" >>Version.tcl
+	echo "" >>Version.tcl
+	echo "namespace eval Version {" >>Version.tcl
+	echo "    variable VERSION {$(VERSION)}" >>Version.tcl
+	echo "    variable target  {$(target)}"  >>Version.tcl
+	echo "}" >>Version.tcl
+	echo "package provide Version $(VERSION)" >>Version.tcl
 
-EXTRA_DIST=$(TCLFILES) $(IMAGES)
+

@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:13:34 2019
-#  Last Modified : <190505.1037>
+#  Last Modified : <190507.1403>
 #
 #  Description	
 #
@@ -45,20 +45,22 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = BuildScripts BuildData Scripts
-EXTRA_DIST = README.md
+SUBDIRS = BuildScripts BuildData Scripts ScreenShots ExtraDoc
+EXTRA_DIST = README.md Doxyfile.in
 
 clean-local:
-	-rm -rf man1
+	-rm -rf man html latex
 
-FritzingPartsSVGEditorLib = DynamicHelp.tcl IconsAndImages.tcl \
-        mainwindow.tcl ParseXML.tcl ReadConfiguration.tcl snitbuttonbox.tcl \
-        snitCabWidgets.tcl snitdialog.tcl snitHTMLHelp.tcl snitLFs.tcl \
-        snitlistbox.tcl snitmainframe.tcl snitpagesmanager.tcl snitrotext.tcl \
-        snitscrollableframe.tcl snitScrollNotebook.tcl snitscrollw.tcl \
-        snitStdMenuBar.tcl snittree.tcl \
-        close.gif DeepwoodsBanner.gif new.gif open.gif print.gif save.gif \
-	openfold.png palette.png gray50.xbm info.xbm questhead.xbm unknown.xpm	
+FritzingPartsSVGEditorModules = Scripts/FritzingPartsBreadboardEditor.tcl \
+				Scripts/FritzingPartsSchematicEditor.tcl \
+				Scripts/FritzingPartsPCBEditor.tcl \
+				Scripts/FritzingPartsEditor.tcl
+
+FritzingPartsSVGEditorLib = $(wildcard Scripts/*.tcl) \
+			    $(wildcard Scripts/*.gif) \
+			    $(wildcard Scripts/*.png) \
+			    $(wildcard Scripts/*.xbm) \
+			    $(wildcard Scripts/*.xpm)
 
 bin_SCRIPTS = FritzingPartsSVGEditor$(EXEEXT)
 
@@ -66,7 +68,8 @@ TCLKIT = $(top_builddir)/BuildData/tclkit${BEXEEXT}
 BUILT_SOURCES = $(TCLKIT)
 
 FritzingPartsSVGEditor$(EXEEXT) : Scripts/FritzingPartsSVGEditor.tcl \
-	$(FritzingPartsSVGEditorLib) $(top_builddir)/html/index.html
+	$(FritzingPartsSVGEditorLib) $(top_builddir)/html/index.html \
+	ExtraDoc/Version.tcl
 	-rm -rf FritzingPartsSVGEditor.vfs
 	$(TCLKIT) $(top_srcdir)/BuildScripts/sdx.kit qwrap $(srcdir)/Scripts/FritzingPartsSVGEditor.tcl
 	$(TCLKIT) $(top_srcdir)/BuildScripts/sdx.kit unwrap FritzingPartsSVGEditor.kit
@@ -76,7 +79,7 @@ FritzingPartsSVGEditor$(EXEEXT) : Scripts/FritzingPartsSVGEditor.tcl \
 	$(TCLKIT) $(top_srcdir)/BuildScripts/AddKitDir.kit FritzingPartsSVGEditor \
 		lib $(URILIB)
 	$(TCLKIT) $(top_srcdir)/BuildScripts/AddKitFile.kit -srcdir $(srcdir)/Scripts FritzingPartsSVGEditor \
-		lib/Common $(FritzingPartsSVGEditorLib)
+		lib/Common $(FritzingPartsSVGEditorLib) ExtraDoc/Version.tcl
 	$(TCLKIT) $(top_srcdir)/BuildScripts/MakePkgIndex.kit FritzingPartsSVGEditor \
 		Common
 	$(UNZIP) -qq -d FritzingPartsSVGEditor.vfs/lib \
@@ -122,3 +125,26 @@ install-exec-local: FritzingPartsSVGEditor.app
 FritzingPartsSVGEditor.app: FritzingPartsSVGEditor${BEXEEXT}
 
 endif
+
+
+$(top_builddir)/html/index.html \
+	man1/man1/FritzingPartsSVGEditor.1 \
+	latex/refman.pdf : Doxyfile Scripts/FritzingPartsSVGEditor.tcl \
+		$(FritzingPartsSVGEditorModules) $(wildcard ExtraDoc/*.h) \
+		ExtraDoc/Version.tcl BuildScripts/tcldoxyfilter.sh
+	-rm -rf man1 html latex
+	$(DOXYGEN)
+	$(MAKE) -C latex
+
+
+Doxyfile: Doxyfile.in
+	
+
+$(top_builddir)/BuildData/tclkit${BEXEEXT}: FORCE
+	$(MAKE) -C $(top_builddir)/BuildData tclkit${BEXEEXT}
+
+ExtraDoc/Version.tcl: FORCE
+	$(MAKE) -C $(top_builddir)/ExtraDoc Version.tcl
+
+FORCE:
+

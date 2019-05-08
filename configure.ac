@@ -60,6 +60,10 @@ fi
 AM_CONDITIONAL(TARGET_IS_LINUX, test ${target_os} = "linux-gnu")
 
 dnl Pure Tcl code libraries
+TEA_INIT([3.5])
+TEA_PATH_TCLCONFIG
+TEA_LOAD_TCLCONFIG
+TEA_PROG_TCLSH
 AX_SNIT
 AX_CSV
 AX_STRUCT
@@ -164,7 +168,11 @@ AC_CONFIG_FILES([ \
 	  BuildScripts/Makefile \
 	  BuildData/Makefile \
 	  Scripts/Makefile \
-	  Doxyfile])
+	  ScreenShots/Makefile \
+	  ExtraDoc/Makefile \
+	  Doxyfile \
+	  BuildScripts/tcldoxyfilter.sh])
+AC_CONFIG_COMMANDS([default],[chmod +x BuildScripts/tcldoxyfilter.sh])
 AC_OUTPUT
 
 

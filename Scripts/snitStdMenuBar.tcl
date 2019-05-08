@@ -51,7 +51,6 @@
 # standards set forth in the Motif Style Guide.
 
 package require snit
-package require gettext
 
 snit::type StdMenuBar {
 # StdMenuBar snit type
@@ -80,56 +79,35 @@ snit::type StdMenuBar {
   # The standard basic Help menu.
 
   typeconstructor {
-      set _std_file_menu [list [_m "Menu|&File"] {file:menu} {file} 0]
-      lappend _std_file_menu_cs \
-            [list command [_m "Menu|File|&New"]     {file:new} ""     {Ctrl n}]
-      lappend _std_file_menu_cs \
-            [list command [_m "Menu|File|&Open..."] {file:open} "" {Ctrl o}]
-      lappend _std_file_menu_cs \
-            [list command [_m "Menu|File|&Save"]    {file:save} "" {Ctrl s}]
-      lappend _std_file_menu_cs \
-            [list command [_m "Menu|File|Save &As..."] {file:save} "" {Ctrl a}]
-      lappend _std_file_menu_cs \
-            [list command [_m "Menu|File|&Close"] {file:close} [_ "Close the application"] {}]
-      lappend _std_file_menu_cs \
-            [list command [_m "Menu|File|E&xit"] {file:exit} [_ "Exit the application"] {}]
-      lappend _std_file_menu_cs $_std_file_menu_cs
-      set _std_edit_menu [list [_m "Menu|&Edit"] {edit} {edit} 0]
-      lappend _std_edit_menu_cs \
-            [list command [_m "Menu|Edit|&Undo"] {edit:undo} [_ "Undo last change"] {Ctrl z}]
-      lappend _std_edit_menu_cs \
-            [list command [_m "Menu|Edit|Cu&t"] {edit:cut edit:havesel} [_ "Cut selection to the paste buffer"] {Ctrl x} -command [mytypemethod EditCut]]
-      lappend _std_edit_menu_cs \
-            [list command [_m "Menu|Edit|&Copy"] {edit:copy edit:havesel} [_ "Copy selection to the paste buffer"] {Ctrl c} -command [mytypemethod EditCopy]]
-      lappend _std_edit_menu_cs \
-            [list command [_m "Menu|Edit|C&lear"] {edit:clear edit:havesel} [_ "Clear selection"] {} -command [mytypemethod EditClear]]
-      lappend _std_edit_menu_cs \
-            [list command [_m "Menu|Edit|&Delete"] {edit:delete edit:havesel} [_ "Delete selection"] {Ctrl d} -command [mytypemethod EditClear]]
-      lappend _std_edit_menu_cs \
-            [list separator]
-      lappend _std_edit_menu_cs \
-            [list command [_m "Menu|Edit|Select All"] {edit:selectall} [_ "Select everything"] {} -command [mytypemethod EditSelectAll]]
-      lappend _std_edit_menu_cs \
-            [list command [_m "Menu|Edit|De-select All"] {edit:deselectall edit:havesel} [_ "Select nothing"] {} -command [mytypemethod EditSelectNone]]
-      lappend _std_edit_menu $_std_edit_menu_cs
-      set _std_view_menu [list [_m "Menu|&View"] {view} {view} 0 {}]
-      set _std_options_menu [list [_m "Menu|&Options"] {options} {options} 0 {}]
-      set _std_help_menu [list [_m "Menu|&Help"] {help} {help} 0]
-      lappend _std_help_menu_cs \
-            [list command [_m "Menu|Help|On &Help..."] {help:help} [_ "Help on help"] {}]
-      lappend _std_help_menu_cs \
-            [list command [_m "Menu|Help|On &Keys..."] {help:keys} [_ "Help on keyboard accelerators"] {}]
-      lappend _std_help_menu_cs \
-            [list command [_m "Menu|Help|&Index..."] {help:index} [_ "Help index"] {}]
-      lappend _std_help_menu_cs \
-            [list command [_m "Menu|Help|&Tutorial..."] {help:tutorial} [_ "Tutorial"] {}]
-      lappend _std_help_menu_cs \
-            [list command [_m "Menu|Help|On &Version"] {help:version} [_ "Version"] {}]
-      lappend _std_help_menu_cs \
-            [list command [_m "Menu|Help|Warranty"] {help:warranty} [_ "Warranty"] {}]
-      lappend _std_help_menu_cs \
-            [list command [_m "Menu|Help|Copying"] {help:copying} [_ "Copying"] {}]
-      lappend _std_help_menu $_std_help_menu_cs
+      set _std_file_menu {
+          {&File} {file:menu} {file} 0
+          {command {&New}     {file:new} ""     {Ctrl n}}
+          {command {&Open...} {file:open} "" {Ctrl o}}
+          {command {&Save}    {file:save} "" {Ctrl s}}
+          {command {Save &As...} {file:save} "" {Ctrl a}}
+          {command {&Close} {file:close} {Close the application} {}}
+          {command {E&xit} {file:exit} {Exit the application} {}}}
+      set _std_edit_menu {
+          {&Edit} {edit} {edit} 0
+          {command {&Undo} {edit:undo} {Undo last change} {Ctrl z}}
+          {command {Cu&t} {edit:cut edit:havesel} {Cut selection to the paste buffer} {Ctrl x} -command [mytypemethod EditCut]}
+          {command {&Copy} {edit:copy edit:havesel} {Copy selection to the paste buffer} {Ctrl c} -command [mytypemethod EditCopy]}
+          {command {C&lear} {edit:clear edit:havesel} {Clear selection} {} -command [mytypemethod EditClear]}
+          {command {&Delete} {edit:delete edit:havesel} {Delete selection} {Ctrl d} -command [mytypemethod EditClear]}
+          {separator}
+          {command {Select All} {edit:selectall} {Select everything} {} -command [mytypemethod EditSelectAll]}
+          {command {De-select All} {edit:deselectall edit:havesel} {Select nothing} {} -command [mytypemethod EditSelectNone]}}
+      set _std_view_menu {{&View} {view} {view} 0 {}}
+      set _std_options_menu {{&Options} {options} {options} 0 {}}
+      set _std_help_menu {
+          {&Help} {help} {help} 0
+          {command {On &Help...} {help:help} {Help on help} {}}
+          {command {On &Keys...} {help:keys} {Help on keyboard accelerators} {}}
+          {command {&Index...} {help:index} {Help index} {}}
+          {command {&Tutorial...} {help:tutorial} {Tutorial} {}}
+          {command {On &Version} {help:version} {Version} {}}
+          {command {Warranty} {help:warranty} {Warranty} {}}
+          {command {Copying} {help:copying} {Copying} {}}}
   }
   
   typemethod MakeMenu {args} {
@@ -146,7 +124,7 @@ snit::type StdMenuBar {
 # [index] StdMenuBar MakeMenu!procedure
 
   set menu [list -file $_std_file_menu \
-  		 -edit $_std_edit_menu \
+  		 -edit [subst $_std_edit_menu] \
 		 -view $_std_view_menu \
 		 -options $_std_options_menu \
 		 -help $_std_help_menu \
@@ -264,14 +242,14 @@ snit::widgetadaptor StdEditContextMenu {
     variable menutags -array {}
     delegate method * to hull except {unpost add entrycget entryconfigure}
     typevariable _editmenu {
-        {command "[_m {Menu|Edit|Cu&t}]" {edit:cut edit:havesel} "[_ {Cut selection to the paste buffer}]" {Ctrl x} -command {StdMenuBar EditCut} -state disabled}
-        {command "[_m {Menu|Edit|&Copy}]" {edit:copy edit:havesel} "[_ {Copy selection to the paste buffer}]" {Ctrl c} -command {StdMenuBar EditCopy} -state disabled}
-        {command "[_m {Menu|Edit|&Paste}]" {edit:paste} "[_ {Paste selection from the paste buffer}]" {Ctrl c} -command {StdMenuBar EditPaste} -state disabled}
-        {command "[_m {Menu|Edit|C&lear}]" {edit:clear edit:havesel} "[_ {Clear selection}]" {} -command {StdMenuBar EditClear} -state disabled}
-        {command "[_m {Menu|Edit|&Delete}]" {edit:delete edit:havesel} "[_ {Delete selection}]" {Ctrl d}  -command {StdMenuBar EditClear} -state disabled}
+        {command {Cu&t} {edit:cut edit:havesel} {Cut selection to the paste buffer} {Ctrl x} -command {StdMenuBar EditCut} -state disabled}
+        {command {&Copy} {edit:copy edit:havesel} {Copy selection to the paste buffer} {Ctrl c} -command {StdMenuBar EditCopy} -state disabled}
+        {command {&Paste} {edit:paste} {Paste selection from the paste buffer} {Ctrl c} -command {StdMenuBar EditPaste} -state disabled}
+        {command {C&lear} {edit:clear edit:havesel} {Clear selection} {} -command {StdMenuBar EditClear} -state disabled}
+        {command {&Delete} {edit:delete edit:havesel} {Delete selection} {Ctrl d}  -command {StdMenuBar EditClear} -state disabled}
         {separator}
-        {command "[_m {Menu|Edit|Select All}]" {edit:selectall} "[_ {Select everything}]" {} -command {StdMenuBar EditSelectAll}}
-        {command "[_m {Menu|Edit|De-select All}]" {edit:deselectall edit:havesel} "[_ {Select nothing}]" {} -command {StdMenuBar EditSelectNone} -state disabled}
+        {command {Select All} {edit:selectall} {Select everything} {} -command {StdMenuBar EditSelectAll}}
+        {command {De-select All} {edit:deselectall edit:havesel} {Select nothing} {} -command {StdMenuBar EditSelectNone} -state disabled}
     }
     constructor {args} {
         set menuitems [subst $_editmenu]
