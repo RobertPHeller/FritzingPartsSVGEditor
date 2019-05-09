@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:29:23 2019
-#  Last Modified : <190509.1059>
+#  Last Modified : <190509.1432>
 #
 #  Description	
 #
@@ -62,9 +62,13 @@
 # <li><a class="el" href="mainGUI.html#EditMenu">Edit menu</a></li>
 # <li><a class="el" href="mainGUI.html#OptionsMenu">Options menu</a></li>
 # <li><a class="el" href="mainGUI.html#HelpMenu">Help menu</a></li>
+# <li><a class="el" href="mainGUI.html#TabNotebook">Editing tabs</a></li>
 # </ol></li>
 # <li><a class="el" href="preferences.html">Preferences</a></li>
-# <li><a class="el" href="FritzingPartsEditor.html">Common GUI elements</a></li>
+# <li><a class="el" href="FritzingPartsEditor.html">Common GUI elements</a><ol type="a">
+# <li><a class="el" href="FritzingPartsEditor.html#CoordinateInfo">Coordinate Information</a></li>
+# <li><a class="el" href="FritzingPartsEditor.html#ToolButtons">Tool Buttons</a></li>
+# </ol></li>
 # <li><a class="el" href="FritzingPartsBreadboardEditor.html">Breadboard Editor</a></li>
 # <li><a class="el" href="FritzingPartsSchematicEditor.html">Schematic Editor</a></li>
 # <li><a class="el" href="FritzingPartsPCBEditor.html">PCB Editor</a></li>
@@ -149,7 +153,13 @@
 # The \b File menu has the has the standard items: \b New, which clears the 
 # current part, \b Open, which loads a part from disk, \b Save and 
 # \b Save \b As..., which saves the current part to disk, and \b Edit, which
-# exits the progra,
+# exits the program.
+#
+# The \b Open and \b Save options don't take a final filename, instead they
+# take a "prefix", to which is appended "_Breadboard.svg", "_Schematic.svg",
+# and "_PCB.svg" for each of the three views.  In other words, opening and
+# saving involves three files (although one or two can be ommited on input,
+# in which case the missing files yield a blank image for those view(s)).
 # @section EditMenu Edit menu
 # @image latex EditMenu.png "The Edit menu"
 # @image html  EditMenu.png
@@ -165,6 +175,19 @@
 # @image latex HelpMenu.png "The Help menu" width=4in
 # @image html  HelpMenuSmall.png
 # The \b Help menu contains a top-level index into the included help pages.
+# @section TabNotebook Editing tabs
+# The main area of the main GUI contains three tabbed panes, one for  each of 
+# the three images used in Fritzing: Breadboard view, Schematic, and PCB view.
+# All three have the same layout with the same GUI elements, but are actually
+# independent.  Each tabbed pane contains an image view area, a set of tool 
+# buttons to the right and coordinate information along the bottom.  The tool
+# buttons and the coordinate information are the same for all three views, 
+# anthough the details of how the some of the tool buttons work are tab 
+# specific and the actually coordinate information is itself specific to each
+# tab.  See \ref FritzingPartsEditor for details about the common features and
+# \ref FritzingPartsBreadboardEditor, \ref FritzingPartsSchematicEditor, and
+# \ref FritzingPartsPCBEditor for the tab specific features and functions.
+#
 # @page preferences Preferences
 # The preferences are stored in a text file in the user's home directory 
 # (folder).  The file is named \c .fritzingpartssvgeditor under Linux and 
