@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:29:23 2019
-#  Last Modified : <190509.1432>
+#  Last Modified : <190509.1543>
 #
 #  Description	
 #
@@ -69,9 +69,18 @@
 # <li><a class="el" href="FritzingPartsEditor.html#CoordinateInfo">Coordinate Information</a></li>
 # <li><a class="el" href="FritzingPartsEditor.html#ToolButtons">Tool Buttons</a></li>
 # </ol></li>
-# <li><a class="el" href="FritzingPartsBreadboardEditor.html">Breadboard Editor</a></li>
-# <li><a class="el" href="FritzingPartsSchematicEditor.html">Schematic Editor</a></li>
-# <li><a class="el" href="FritzingPartsPCBEditor.html">PCB Editor</a></li>
+# <li><a class="el" href="FritzingPartsBreadboardEditor.html">Breadboard Editor</a><ol type="a">
+# <li><a class="el" href="FritzingPartsBreadboardEditor.html#BreadboardPin">Pins</a></li>
+# <li><a class="el" href="FritzingPartsBreadboardEditor.html#BreadboardRect">Rectangles</a></li>
+# <li><a class="el" href="FritzingPartsBreadboardEditor.html#BreadboardLine">Lines</a></li>
+# <li><a class="el" href="FritzingPartsBreadboardEditor.html#BreadboardCirc">Circles</a></li>
+# <li><a class="el" href="FritzingPartsBreadboardEditor.html#BreadboardArc">Arcs</a></li>
+# <li><a class="el" href="FritzingPartsBreadboardEditor.html#BreadboardText">Text</a></li>
+# </ol></li>
+# <li><a class="el" href="FritzingPartsSchematicEditor.html">Schematic Editor</a><ol type="a">
+# </ol></li>
+# <li><a class="el" href="FritzingPartsPCBEditor.html">PCB Editor</a><ol type="a">
+# </ol></li>
 # <li><a class="el" href="help.html">Help</a></li>
 # <li><a class="el" href="Version.html">Version</a></li>
 # <li><a class="el" href="Copying.html">Copying</a><ol type="a">
