@@ -611,10 +611,10 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = @srcdir@/Scripts/FritzingPartsSVGEditor.tcl \
+			 @srcdir@/Scripts/FritzingPartsEditor.tcl \
                          @srcdir@/Scripts/FritzingPartsBreadboardEditor.tcl \
                          @srcdir@/Scripts/FritzingPartsSchematicEditor.tcl \
 			 @srcdir@/Scripts/FritzingPartsPCBEditor.tcl \
-			 @srcdir@/Scripts/FritzingPartsEditor.tcl \
 			 @srcdir@/ExtraDoc/COPYING.h \
 			 @srcdir@/ExtraDoc/Help.h \
 			 @srcdir@/ExtraDoc/Version.tcl \

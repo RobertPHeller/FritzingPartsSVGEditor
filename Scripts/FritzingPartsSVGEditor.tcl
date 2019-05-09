@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:29:23 2019
-#  Last Modified : <190508.1312>
+#  Last Modified : <190509.1059>
 #
 #  Description	
 #
@@ -57,7 +57,12 @@
 # <li><a class="el" href="group__FritzingPartsSVGEditor.html#FritzingPartsSVGEditorFILES">FILES</a></li>
 # <li><a class="el" href="group__FritzingPartsSVGEditor.html#FritzingPartsSVGEditorAUTHOR">AUTHOR</a></li>
 # </ol></li>
-# <li><a class="el" href="mainGUI.html">Main GUI</a></li>
+# <li><a class="el" href="mainGUI.html">Main GUI</a><ol type="a">
+# <li><a class="el" href="mainGUI.html#FileMenu">File menu</a></li>
+# <li><a class="el" href="mainGUI.html#EditMenu">Edit menu</a></li>
+# <li><a class="el" href="mainGUI.html#OptionsMenu">Options menu</a></li>
+# <li><a class="el" href="mainGUI.html#HelpMenu">Help menu</a></li>
+# </ol></li>
 # <li><a class="el" href="preferences.html">Preferences</a></li>
 # <li><a class="el" href="FritzingPartsEditor.html">Common GUI elements</a></li>
 # <li><a class="el" href="FritzingPartsBreadboardEditor.html">Breadboard Editor</a></li>
@@ -71,11 +76,30 @@
 # </ol></div></div>
 # @endhtmlonly
 # @latexonly
-# Front page content. TBD
+# This program is meant to fill a missing feature of the Fritzing program, an
+# editor for creating the part graphics.  Inkscape or Illustrator are really
+# poor choices for creating these sorts of graphics or at least I found 
+# Inkscape frustrating to use to create breadboard or PCB layouts, esp. when 
+# compared to KiCAD's footprint editor.  Placing accurately sized graphics in
+# accurate locations is not really what Inkscape is specifically designed to do.
+# It is meant for creating artwork.  For my initial parts, I ended up hand 
+# editing the SVG files with a text editor, with a little scripting help. Then
+# I wrote this program.  Unlike "typical" graphics editing program, this 
+# program does not allow for placing or moving graphical elements with the
+# pointer (mouse, etc.).  Instead, to place or edit a graphical element, a
+# dialog box is displayed and one enters the exact numerical location, size,
+# etc.  This might seem clunky to some people, but it is designed to allow 
+# direct transfer from a datasheet drawing, which after all is loaded down with
+# actual measurements (numbers!).  For people who have an aversion to their
+# keyboards, there is always Inkscape or Illustrator.
+#
+# Fritzing should eventually have its own built-in graphical part editor (much
+# like KiCAD (and I guess EagleCAD) does.  I have no problem with the Fritzing
+# developers using this program as a basis or inspiration.
 # @endlatexonly
 #
 # @defgroup FritzingPartsSVGEditor Fritzing Parts SVG Editor
-# @brief Create and edit SVG SVG files used as the images for the Fritzing Parts editor.
+# Create and edit SVG SVG files used as the images for the Fritzing Parts editor.
 #
 # @section FritzingPartsSVGEditorSYNOPSIS SYNOPSIS
 #
@@ -112,10 +136,57 @@
 # Robert Heller \<heller\@deepsoft.com\>
 #
 # @page mainGUI Main GUI
-# TBD
+# The main gui, shown below, has standard menu bar and three tabs, one for 
+# each of the three images used in Fritzing: Breadboard view, Schematic, and
+# PCB view.
+# @image latex Typical_MainGUI.png "The main GUI of the Fritzing Parts SVG Editor program" width=4in
+# @image html  Typical_MainGUISmall.png
+# There are four menus on the top menu bar, a file menu, an edit menu, an
+# options (preferences) menu, and a help menu.
+# @section FileMenu File menu
+# @image latex FileMenu.png "The File menu"
+# @image html  FileMenu.png
+# The \b File menu has the has the standard items: \b New, which clears the 
+# current part, \b Open, which loads a part from disk, \b Save and 
+# \b Save \b As..., which saves the current part to disk, and \b Edit, which
+# exits the progra,
+# @section EditMenu Edit menu
+# @image latex EditMenu.png "The Edit menu"
+# @image html  EditMenu.png
+# The \b Edit menu has the standard editing related items.
+# @section OptionsMenu Options menu
+# @image latex OptionsMenu.png "The Options menu"
+# @image html  OptionsMenu.png
+# The \b Options menu has three items: \b Edit \b Configuration, 
+# \b Load \b Configuration, and \b Save \b Configuration.  These items allow
+# for editing, loading, and saving the configuration (preferences).  See
+# \ref preferences.
+# @section HelpMenu Help menu
+# @image latex HelpMenu.png "The Help menu" width=4in
+# @image html  HelpMenuSmall.png
+# The \b Help menu contains a top-level index into the included help pages.
 # @page preferences Preferences
-# TBD
-
+# The preferences are stored in a text file in the user's home directory 
+# (folder).  The file is named \c .fritzingpartssvgeditor under Linux and 
+# MacOSX and \c fritzingpartssvgeditor.rc under MS-Windows.  There are five 
+# preferences:
+# 
+#  <dl>
+#  <dt>Units</dt><dd>The units to use for the width and height. Can me either 
+#  mm (milimeters) or inch (inches)</dd>
+#  <dt>Width</dt><dd>The real world width (in Units above) of the viewport.</dd>
+#  <dt>Height</dt><dd>The real world height (in Units above) of the viewport.</dd>
+#  <dt>Viewport Width</dt><dd>The numerical width of the viewport</dd>
+#  <dt>Viewport Height</dt><dd>The numerical height of the viewport</dd>
+#  </dl>
+#
+# These are the default initial values to use.  When loading a file, the 
+# values stored in the file are used.  The aspect ratio of the Width to Height
+# should be the same as the aspect ratio of the Viewport Width to Viewport 
+# Height to insure square pixels.  Typically the Viewport Width and Viewport 
+# Height will be a constant multiple of the Width and Height respectively.  The
+# Viewport determines the coordinate system used to place and size graphical 
+# elements.  The Viewport origin (upper left corner) is always 0,0.
 
 set argv0 [file join [file dirname [info nameofexecutable]] [file rootname [file tail [info script]]]]
 
@@ -197,7 +268,13 @@ snit::type FritzingPartsSVGEditor {
             {command {On &Version} {help:help} {Version} {} -command {HTMLHelp help Version}}
             {command {Warranty} {help:help} {Warranty} {} -command {HTMLHelp help Warranty}}
             {command {Copying} {help:help} {Copying} {} -command {HTMLHelp help Copying}}
-            {command {Reference Manual} {help:help} {} {} -command {HTMLHelp help "Fritzing Parts SVG Editor Reference"}}
+            {command {Invoking from the shell} {help:help} {Invoking} {} -command {HTMLHelp help {Fritzing Parts SVG Editor}}}
+            {command {Main GUI} {help:help} {Main GUI} {} -command {HTMLHelp help {Main GUI}}}
+            {command {Preferences} {help:help} {Preferences} {} -command {HTMLHelp help {Preferences}}}
+            {command {Common GUI elements} {help:help} {Common GUI elements} {} -command {HTMLHelp help {Common GUI elements}}}
+            {command {Breadboard Editor} {help:help} {Breadboard Editor} {} -command {HTMLHelp help {Breadboard Editor}}}
+            {command {Schematic Editor} {help:help} {Schematic Editor} {} -command {HTMLHelp help {Schematic Editor}}}
+            {command {PCB Editor} {help:help} {PCB Editor} {} -command {HTMLHelp help {PCB Editor}}}
         }
     }
     
@@ -205,6 +282,7 @@ snit::type FritzingPartsSVGEditor {
     typevariable _currentProgress 0
     
     typemethod _dirtyHandler {tabid dirty} {
+        if {[llength [$notebook tabs]] <= $tabid} {return}
         if {$dirty} {
             $notebook tab $tabid -image $_dirty
         } else {
@@ -278,7 +356,6 @@ snit::type FritzingPartsSVGEditor {
         if {[llength $argv] > 0} {
             $type _open [lindex $argv 0]
         }
-                        
     }
     typemethod SplashWorkMessage {message percent} {
         incr _currentProgress $percent
@@ -310,7 +387,7 @@ snit::type FritzingPartsSVGEditor {
                 exit
             }
             yes {
-                $type save
+                $type _save
                 exit
             }
         }

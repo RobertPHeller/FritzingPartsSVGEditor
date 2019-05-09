@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:53:10 2019
-#  Last Modified : <190508.1308>
+#  Last Modified : <190509.0850>
 #
 #  Description	
 #
@@ -431,6 +431,7 @@ snit::widgetadaptor PCBEditor {
         $self CommonInit PCB
         $self configurelist $args
         $hull makeVpRect
+        $self _setClean
     }
     method addpin {} {
         incr _pinno
@@ -468,6 +469,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
+        $self _setDirty
     }
     method _editPin {gid} {
         set tag "gid=$gid"
@@ -526,6 +528,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
+        $self _setDirty
     }
     method addrect {} {
         set result [$addrectdialog draw -title {Add new rectangle}]
@@ -546,6 +549,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+        $self _setDirty
     }
     method _editRect {gid} {
         set tag "gid=$gid"
@@ -578,6 +582,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Shift-KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+        $self _setDirty
     }
     method addline {} {
         set result [$addlinedialog draw -title {Add new line}]
@@ -598,6 +603,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+        $self _setDirty
     }
     method _editLine {gid} {
         set tag "gid=$gid"
@@ -630,6 +636,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+        $self _setDirty
     }
     method addcirc {} {
         set result [$addcircdialog draw -title {Add new circle}]
@@ -659,6 +666,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+        $self _setDirty
     }
     method _editCirc {gid} {
         set tag "gid=$gid"
@@ -710,6 +718,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+        $self _setDirty
     }
     method addarc {} {
         set result [$addarcdialog draw -title {Add new arc}]
@@ -742,6 +751,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+        $self _setDirty
     }
     method _editArc {gid} {
         set tag "gid=$gid"
@@ -796,6 +806,7 @@ snit::widgetadaptor PCBEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+        $self _setDirty
     }
     method addtext {} {
         set result [$addtextdialog draw -title {Add new text}]
@@ -810,10 +821,11 @@ snit::widgetadaptor PCBEditor {
         set y $opts(-ypos)
         set fill #FFFFFF
         set font [FontMapping MapToTk $opts(-font) $opts(-size)]
-        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor ne
+        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor sw
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+        $self _setDirty
     }
     method _editText {gid} {
         set tag "gid=$gid"
@@ -839,10 +851,11 @@ snit::widgetadaptor PCBEditor {
         set y $opts(-ypos)
         set fill #FFFFFF
         set font [FontMapping MapToTk $opts(-font) $opts(-size)]
-        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor nw
+        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor sw
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+        $self _setDirty
     }
     method read {filename} {
         if {[catch {open $filename r} fp]} {
@@ -866,20 +879,34 @@ snit::widgetadaptor PCBEditor {
                 set copper1Group $g
             }
         }
+        set copperGroup {}
+        if {$copper0Group ne "" && $copper1Group eq ""} {
+            foreach g [$copper0Group getElementsByTagName g -depth 1] {
+                if {[$g attribute id] eq "copper1"} {
+                    set copper1Group $g
+                    set copperGroup $g
+                    break
+                }
+            }
+        } elseif {$copper1Group ne "" && $copper0Group eq ""} {
+            foreach g [$copper1Group getElementsByTagName g -depth 1] {
+                if {[$g attribute id] eq "copper0"} {
+                    set copper0Group $g
+                    set copperGroup $g
+                    break
+                }
+            }
+        }
         if {$silkscreenGroup eq "" &&
-            $copper0Group eq "" &&
-            $copper1Group eq ""} {
+            $copperGroup eq ""} {
             tk_messageBox -type ok -icon error -message "Silkscreen and copper groups not found!"
             return
         }
         if {$silkscreenGroup ne ""} {
             $self _processGroup $silkscreenGroup [list "silkscreen"] unrecognized
         }
-        if {$copper0Group ne ""} {
-            $self _processGroup $copper0Group [list "copper0"] unrecognized
-        }
-        if {$copper1Group ne ""} {
-            $self _processGroup $copper1Group [list "copper1"] unrecognized
+        if {$copperGroup ne ""} {
+            $self _processGroup $copperGroup [list "copper0" "copper1"] unrecognized
         }
         if {[info exists unrecognized]} {
             # -- displayed unrecognized tags
@@ -918,7 +945,7 @@ snit::widgetadaptor PCBEditor {
             set attrs [getattrsfromtags $tags pinno]
             set groups [getgroups $tags]
             set gid [getgid $tags]
-            lappend attrs gid $gid
+            lappend attrs fpe:gid $gid
             switch [$hull type $i] {
                 oval {
                     # Circle
@@ -1051,6 +1078,7 @@ snit::widgetadaptor PCBEditor {
         xmlheader $fp PCBEditor
         $newxml displayTree $fp
         close $fp
+        $self _setClean
     }
 }
 

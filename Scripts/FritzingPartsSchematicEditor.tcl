@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:52:32 2019
-#  Last Modified : <190508.1307>
+#  Last Modified : <190509.0850>
 #
 #  Description	
 #
@@ -490,6 +490,7 @@ snit::widgetadaptor SchematicEditor {
         $self CommonInit Schematic
         $self configurelist $args
         $hull makeVpRect
+        $self _setClean
     }
     method addpin_1 {result} {
         array set opts $result
@@ -530,11 +531,11 @@ snit::widgetadaptor SchematicEditor {
             left {
                 set px2 [expr {$x + $length}]
                 set py2 $y
-                set lx  $px2
+                set lx  [expr {$px2 + ($width * 2)}]
                 set ly  $py2
                 set la  w
                 set nx  [expr {$x + ($length / 2.0)}]
-                set ny  [expr {$y - $width}]
+                set ny  [expr {$y - ($width * 2)}]
                 set na  s
                 if {$inverted} {
                     set px2 [expr {$px2 - ($ir*2)}]
@@ -546,10 +547,10 @@ snit::widgetadaptor SchematicEditor {
                 set px2 [expr {$x-$length}]
                 set py2 $y
                 set lx  $px2
-                set ly  $py2
+                set ly  [expr {$py2 - ($width * 2)}]
                 set la  e
                 set nx  [expr {$x - ($length / 2.0)}]
-                set ny  [expr {$y - $width}]
+                set ny  [expr {$y - ($width * 2)}]
                 set na  s
                 if {$inverted} {
                     set px2 [expr {$px2 + ($ir*2)}]
@@ -563,7 +564,7 @@ snit::widgetadaptor SchematicEditor {
                 set lx  $px2
                 set ly  $py2
                 set la  n
-                set nx  [expr {$x + $width}]
+                set nx  [expr {$x + ($width * 2)}]
                 set ny  [expr {$y + ($length / 2.0)}]
                 set na  w
                 if {$inverted} {
@@ -578,7 +579,7 @@ snit::widgetadaptor SchematicEditor {
                 set lx  $px2
                 set ly  $py2
                 set la  s
-                set nx  [expr {$x + $width}]
+                set nx  [expr {$x + ($width * 2)}]
                 set ny  [expr {$y - ($length / 2.0)}]
                 set na  w
                 if {$inverted} {
@@ -597,14 +598,25 @@ snit::widgetadaptor SchematicEditor {
         }
         set label $opts(-pinname)
         if {$label ne ""} {
-            $hull create text $lx $ly -anchor $la -font $font -text $label \
+            set id [$hull create text $lx $ly -anchor $la -font $font \
+                    -text $label -fill $color -tags $pinlabeltags]
+            set l_coords [$hull bbox $id]
+            lassign $l_coords x0 dummy dummy y0
+            $hull delete $id
+            $hull create text $x0 $y0 -anchor sw -font $font -text $label \
                   -fill $color -tags $pinlabeltags
         }
-        $hull create text $nx $ny -anchor $na -font $font -text $_pinno \
+        set id [$hull create text $nx $ny -anchor $na -font $font \
+                -text $_pinno -fill $color -tags $pinnotags]
+        set n_coords [$hull bbox $id]
+        lassign $n_coords x0 dummy dummy y0
+        $hull delete $id
+        $hull create text $x0 $y0 -anchor sw -font $font -text $_pinno \
               -fill $color -tags $pinnotags
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
+        $self _setDirty
     }
     method addpin {} {
         incr _pinno
@@ -626,14 +638,20 @@ snit::widgetadaptor SchematicEditor {
         set tags [$hull itemcget $matchtagC -tags]
         set attrs [getattrsfromtags $tags opts(-pinno)]
         set opts(-attributes) $attrs
-        set tags [$hull itemcget $matchtagO -tags]
+        set tags [$self getunionoftags $gid]
         foreach t $tags {
             regexp {^orientation:(.*)$} $t => opts(-orientation)
             regexp {^length:(.*)$} $t => opts(-length)
             regexp {^inverted:(.*)$} $t => opts(-inverted)
         }
-        set opts(-color) [$hull itemcget $matchtagO -fill]
-        set opts(-linethickness) [$hull itemcget $matchtagO -width]
+        foreach i [$hull find withtag $matchtagO] {
+            if {[$hull type $i] eq "oval"} {
+                set opts(-color) [$hull itemcget $i -fill]
+            }
+            if {[$hull type $i] eq "line"} {
+                set opts(-linethickness) [$hull itemcget $i -width]
+            }
+        }
         FontMapping MapFromTk [$hull itemcget $matchtagN -font] opts(-font) opts(-size)
         set opts(-pinname) [$hull itemcget $matchtagL -text]
         set result [eval [list $addpindialog draw -title {Edit pin}] [array get opts]]
@@ -660,6 +678,7 @@ snit::widgetadaptor SchematicEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+        $self _setDirty
     }
     method _editRect {gid} {
         set tag "gid=$gid"
@@ -693,6 +712,7 @@ snit::widgetadaptor SchematicEditor {
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Shift-KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+        $self _setDirty
     }
     method addline {} {
         set result [$addlinedialog draw -title {Add new line}]
@@ -713,6 +733,7 @@ snit::widgetadaptor SchematicEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+        $self _setDirty
     }
     method _editLine {gid} {
         set tag "gid=$gid"
@@ -746,6 +767,7 @@ snit::widgetadaptor SchematicEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+        $self _setDirty
     }
     method addcirc {} {
         set result [$addcircdialog draw -title {Add new circle}]
@@ -775,6 +797,7 @@ snit::widgetadaptor SchematicEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+        $self _setDirty
     }
     method _editCirc {gid} {
         set tag "gid=$gid"
@@ -829,6 +852,7 @@ snit::widgetadaptor SchematicEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+        $self _setDirty
     }
     method addarc {} {
         set result [$addarcdialog draw -title {Add new arc}]
@@ -861,6 +885,7 @@ snit::widgetadaptor SchematicEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+        $self _setDirty
     }
     method _editArc {gid} {
         set tag "gid=$gid"
@@ -914,10 +939,11 @@ snit::widgetadaptor SchematicEditor {
             set width [expr {$radius - $dradius}]
             set arcstyle arc
         }
-        $hull create arc $x1 $y1 $x2 $y2 -style $arcstyle -start $opts(-start) -extent $ots(-extent) -tags $tags -fill $fill -outline $outline -width $width
+        $hull create arc $x1 $y1 $x2 $y2 -style $arcstyle -start $opts(-start) -extent $opts(-extent) -tags $tags -fill $fill -outline $outline -width $width
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+        $self _setDirty
     }
     method addtext {} {
         set result [$addtextdialog draw -title {Add new text}]
@@ -932,10 +958,11 @@ snit::widgetadaptor SchematicEditor {
         set y $opts(-ypos)
         set fill $opts(-color)
         set font [FontMapping MapToTk $opts(-font) $opts(-size)]
-        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor nw
+        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor sw
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+        $self _setDirty
     }
     method _editText {gid} {
         set tag "gid=$gid"
@@ -962,10 +989,11 @@ snit::widgetadaptor SchematicEditor {
         set y $opts(-ypos)
         set fill $opts(-color)
         set font [FontMapping MapToTk $opts(-font) $opts(-size)]
-        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor ne
+        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor sw
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+        $self _setDirty
     }
     method read {filename} {
         if {[catch {open $filename r} fp]} {
@@ -1030,7 +1058,7 @@ snit::widgetadaptor SchematicEditor {
             set attrs [getattrsfromtags $tags pinno]
             set groups [getgroups $tags]
             set gid [getgid $tags]
-            lappend attrs gid $gid
+            lappend attrs fpe:gid $gid
             switch [$hull type $i] {
                 oval {
                     # Circle
@@ -1045,6 +1073,7 @@ snit::widgetadaptor SchematicEditor {
                     set radius [expr {($x2-$x1)/2.0}]
                     lappend attrs cx $xpos cy $ypos r $radius
                     set fill [$hull itemcget $i -fill]
+                    #puts stderr "*** $self write: getting outline for oval $gid"
                     set outline [$hull itemcget $i -outline]
                     set width [$hull itemcget $i -width]
                     if {$fill ne ""} {
@@ -1070,6 +1099,7 @@ snit::widgetadaptor SchematicEditor {
                     lappend attrs width [expr {$x2-$x1}] \
                           height [expr {$y2-$y1}]
                     set fill [$hull itemcget $i -fill]
+                    #puts stderr "*** $self write: getting outline for rectangle $gid"
                     set outline [$hull itemcget $i -outline]
                     set width [$hull itemcget $i -width]
                     if {$fill ne ""} {
@@ -1086,9 +1116,19 @@ snit::widgetadaptor SchematicEditor {
                     lassign $coords x1 y1 x2 y2
                     lappend attrs x1 $x1 y1 $y1
                     lappend attrs x2 $x2 y2 $y2
-                    set outline [$hull itemcget $i -outline]
+                    #puts stderr "*** $self write: getting outline for line $gid"
+                    set fill [$hull itemcget $i -fill]
                     set width [$hull itemcget $i -width]
-                    lappend attrs stroke $outline stroke-width $width
+                    lappend attrs stroke $fill stroke-width $width
+                    foreach t $tags {
+                        if {[regexp {^orientation:(.*)$} $t => orientation] > 0} {
+                            lappend attrs fpe:orientation $orientation
+                        } elseif {[regexp {^length:([[:digit:].]+)$} $t => length] > 0} {
+                            lappend attrs fpe:length $length
+                        } elseif {[regexp {^inverted:(.*)$} $t => inverted] > 0} {
+                            lappend attrs fpe:inverted $inverted
+                        }
+                    }
                     set ele [SimpleDOMElement create %AUTO% -tag line \
                              -attributes $attrs]
                     if {"pins" in $groups} {
@@ -1104,6 +1144,7 @@ snit::widgetadaptor SchematicEditor {
                     set cy [expr {($y1+$y2)/2.0}]
                     set r  [expr {($x2-$x1)/2.0}]
                     set fill [$hull itemcget $i -fill]
+                    #puts stderr "*** $self write: getting outline for arc $gid"
                     set outline [$hull itemcget $i -outline]
                     set width [$hull itemcget $i -width]
                     if {$fill ne ""} {

@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 12:54:52 2019
-#  Last Modified : <190505.1254>
+#  Last Modified : <190509.0946>
 #
 #  Description	
 #
@@ -43,4 +43,4 @@
 ##############################################################################
 
 
-EXTRA_DIST = 
+EXTRA_DIST = $(wildcard *.png)

@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 15:59:34 2019
-#  Last Modified : <190508.1318>
+#  Last Modified : <190509.0854>
 #
 #  Description	
 #
@@ -42,7 +42,6 @@
 
 ## @page FritzingPartsEditor Common GUI elements
 # TBD
-
 
 package require Tk
 package require tile
@@ -356,11 +355,12 @@ snit::macro CommonEditorFunctions {} {
     
     method _delete {gid} {
         $hull delete "gid=$gid"
+        $self _setDirty
     }
     proc gettagsfromattrs {attrs} {
         set tags [list]
         foreach {k v} $attrs {
-            if {$k in {fpe:gid width height x y cx cy x1 x2 y1 y2 d r fill stroke stroke-width font-family font-size id}} {continue}
+            if {$k in {fpe:gid fpe:orientation fpe:length fpe:inverted width height x y cx cy x1 x2 y1 y2 d r fill stroke stroke-width font-family font-size id}} {continue}
             lappend tags "${k}=${v}"
         }
         return $tags
@@ -380,10 +380,23 @@ snit::macro CommonEditorFunctions {} {
         return $attrs
     }
     proc getgid {tags} {
+        #puts stderr "*** getgid $tags"
         foreach t $tags {
-            if {[regexp {^fpe:gid=([[:digit:]]+)$} $t => gid] > 0} {return $gid}
+            if {[regexp {^gid=([[:digit:]]+)$} $t => gid] > 0} {return $gid}
         }
         return -1
+    }
+    method getunionoftags {gid} {
+        set result [list]
+        foreach i [$hull find withtag "gid=$gid"] {
+            set tags [$hull itemcget $i -tags]
+            foreach t $tags {
+                if {[lsearch -exact $result $t] < 0} {
+                    lappend result $t
+                }
+            }
+        }
+        return $result
     }
     proc getgroups {tags} {
         set result [list]
@@ -400,10 +413,12 @@ snit::macro CommonEditorFunctions {} {
         set _itemContext_itemtype $itemtype
         switch $itemtype {
             pin {
-                set tags [$hull itemcget "gid=$gid" -tags]
                 set pinno -1
+                set tags [$self getunionoftags $gid]
                 foreach t $tags {
+                    #puts stderr "*** $self _itemContextMenu: t = $t"
                     if {[regexp {^pinno=([[:digit:]]+)$} $t => pinno] > 0} {
+                        #puts stderr "*** $self _itemContextMenu: pinno is $pinno"
                         break
                     }
                 }
@@ -429,6 +444,7 @@ snit::macro CommonEditorFunctions {} {
     }
     method _canvasContextMenu {items X Y} {
         #puts stderr "*** $self _canvasContextMenu $items"
+        if {[llength $items] < 2} {return}
         $canvascontextmenu delete 0 end
         foreach i $items {
             set tags [$hull itemcget $i -tags]
@@ -438,9 +454,13 @@ snit::macro CommonEditorFunctions {} {
             foreach t $tags {
                 regexp {^gid=([[:digit:]]+)$} $t => gid
                 regexp {^type=(.+)$} $t -> itemtype
-                regexp {^pinno=([[:digit:]]+)$} $t => pinno
             }
             if {$gid < 0 || $itemtype eq {}} {continue}
+            foreach t [$self getunionoftags $gid] {
+                if {[regexp {^pinno=([[:digit:]]+)$} $t => pinno] > 0} {
+                    break
+                }
+            }
             switch $itemtype {
                 pin {
                     $canvascontextmenu add command \
@@ -512,7 +532,7 @@ snit::macro CommonEditorFunctions {} {
         #$menu unpost;# Do I need this?
     }
     
-    method _setDirty {args} {
+    method _setDirty {} {
         set _isdirty yes
         if {$options(-dirtyhandler) ne ""} {
             uplevel #0 $options(-dirtyhandler) $options(-dirtyhandlercontext) $_isdirty
@@ -563,11 +583,12 @@ snit::macro CommonEditorFunctions {} {
         puts $fp "<!-- Generator: [file tail $::argv0] $Version::VERSION on $Version::target ($generatorType) -->"
     }
     method _processGroup {group groups unrecname} {
+        #puts stderr "*** $self _processGroup $group \{$groups\} $unrecname"
         upvar $unrecname unrecognized
         foreach c [$group children] {
-            #puts stderr "*** $self read: c is $c, <[$c cget -tag]>"
+            #puts stderr "*** $self _processGroup: c is $c, <[$c cget -tag]>"
             set gid [$c attribute fpe:gid]
-            if {$gid ne ""} {
+            if {$gid ne "" && $gid > 0} {
                 if {$gid > $_gid} {
                     set _gid $gid
                 }
@@ -578,10 +599,11 @@ snit::macro CommonEditorFunctions {} {
                     $self _processGroup $c [linsert $groups 0 $childgroup] unrecognized
                 }
                 rect {
-                    if {$gid eq ""} {
+                    if {$gid eq "" || $gid <= 0} {
                         incr _gid
                         set gid $_gid
                     }
+                    #puts stderr "*** $self _processGroup: gid is '$gid' (rect branch)"
                     set tags [gettagsfromattrs [$c cget -attributes]]
                     lappend tags "gid=$gid"
                     foreach g $groups {
@@ -606,15 +628,16 @@ snit::macro CommonEditorFunctions {} {
                     } else {
                         $hull create rectangle $x1 $y1 $x2 $y2 -tags $tags -fill {} -outline $outline -width $width
                     }
-                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
-                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+                    $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                    $hull bind "gid=$gid" <KeyPress-e> [mymethod _editRect $gid]
+                    $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid rect %X %Y]
                 }
                 circle {
-                    if {$gid eq ""} {
+                    if {$gid eq "" || $gid <= 0} {
                         incr _gid
                         set gid $_gid
                     }
+                    #puts stderr "*** $self _processGroup: gid is '$gid' (circle branch)"
                     set tags [gettagsfromattrs [$c cget -attributes]]
                     lappend tags "gid=$gid"
                     foreach g $groups {
@@ -630,6 +653,8 @@ snit::macro CommonEditorFunctions {} {
                             }
                             set ispin true
                         }
+                    } elseif {"pins" in $groups} {
+                        set ispin true
                     }
                     if {$ispin} {
                         lappend tags "type=pin"
@@ -640,36 +665,48 @@ snit::macro CommonEditorFunctions {} {
                     set ypos [$c attribute cy]
                     set radius [$c attribute r]
                     set fill [$c attribute fill]
+                    if {$fill eq "none"} {set fill {}}
                     set outline [$c attribute stroke]
-                    set width [$c attribute strike-width]
+                    set width [$c attribute stroke-width]
                     if {$width eq {}} {set width 0}
                     set x1 [expr {$xpos-$radius}]
                     set y1 [expr {$ypos-$radius}]
                     set x2 [expr {$xpos+$radius}]
                     set y2 [expr {$ypos+$radius}]
+                    #puts stderr "*** $self _processGroup: fill is \{$fill\}, outline is \{$outline\}, width=$width"
+                    #puts stderr "*** $self _processGroup: x1 = $x1, y1 = $y1, x2 = $x2, y2 = $y2"
+                    #puts stderr "*** $self _processGroup: ispin = $ispin"
+                    $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline $outline -width $width
+                    $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
                     if {$ispin} {
-                        $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline {}
-                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
-                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
+                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
+                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
                     } else {
-                        $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline $outline -width $width
-                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
-                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editCirc $gid]
+                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid circ %X %Y]
                     }
                 }
                 line {
-                    if {$gid eq ""} {
+                    if {$gid eq "" || $gid <= 0} {
                         incr _gid
                         set gid $_gid
                     }
+                    #puts stderr "*** $self _processGroup: gid is '$gid' (line branch)"
                     set tags [gettagsfromattrs [$c cget -attributes]]
                     lappend tags "gid=$gid"
                     foreach g $groups {
                         lappend tags "group=$g"
                     }
-                    lappend tags "type=line"
+                    if {"pins" in $groups} {
+                        lappend tags "type=pin"
+                        lappend tags "orientation:[$c attribute fpe:orientation]"
+                        lappend tags "length:[$c attribute fpe:length]"
+                        lappend tags "inverted:[$c attribute fpe:inverted]"
+                        set ispin yes
+                    } else {
+                        lappend tags "type=line"
+                        set ispin no
+                    }
                     set x1 [$c attribute x1]
                     set y1 [$c attribute y1]
                     set x2 [$c attribute x2]
@@ -677,38 +714,56 @@ snit::macro CommonEditorFunctions {} {
                     set outline [$c attribute stroke]
                     set width [$c attribute stroke-width]
                     $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $outline -width $width
-                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
-                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+                    $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                    if {$ispin} {
+                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
+                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
+                    } else {
+                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editLine $gid]
+                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid line %X %Y]
+                    }
                 }
                 text {
-                    if {$gid eq ""} {
+                    if {$gid eq "" || $gid <= 0} {
                         incr _gid
                         set gid $_gid
                     }
+                    #puts stderr "*** $self _processGroup: gid is '$gid' (text branch)"
                     set tags [gettagsfromattrs [$c cget -attributes]]
                     lappend tags "gid=$gid"
                     foreach g $groups {
                         lappend tags "group=$g"
                     }
-                    lappend tags "type=text"
+                    if {"pins" in $groups} {
+                        lappend tags "type=pin"
+                        set ispin yes
+                    } else {
+                        lappend tags "type=text"
+                        set ispin no
+                    }
                     set x [$c attribute x]
                     set y [$c attribute y]
                     set fill [$c attribute fill]
                     set font [FontMapping MapToTk [$c attribute font-family] [$c attribute font-size]]
-                    $hull create text $x $y -text [$c data] -font $font -tags $tags -fill $fill -anchor nw
-                    $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                    $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
-                    $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+                    $hull create text $x $y -text [$c data] -font $font -tags $tags -fill $fill -anchor sw
+                    $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                    if {$ispin} {
+                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
+                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
+                    } else {
+                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editText $gid]
+                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid text %X %Y]
+                    }
                 }
                 path {
                     set pathData [$c attribute d]
                     if {[regexp {^M[[:space:]]*([[:digit:].]+),([[:digit:].]+) A[[:space:]]*([[:digit:].]+),([[:digit:].]+) 0 0 1 ([[:digit:].]+),([[:digit:].]+) z$} => startX startY r1 r2 ententX extentY] > 0 &&
                         abs($r1-$r2) < .00001} {
-                        if {$gid eq ""} {
+                        if {$gid eq "" || $gid <= 0} {
                             incr _gid
                             set gid $_gid
                         }
+                        #puts stderr "*** $self _processGroup: gid is '$gid' (path branch)"
                         set tags [gettagsfromattrs [$c cget -attributes]]
                         lappend tags "gid=$gid"
                         foreach g $groups {
@@ -732,9 +787,9 @@ snit::macro CommonEditorFunctions {} {
                         set x2 [expr {$cx+$r1}]
                         set y2 [expr {$cy+$r1}]
                         $hull create arc $x1 $y1 $x2 $y2 -style $arcstyle -start $start -extent $extent -tags $tags -fill $fill -outline $outline -width $width
-                        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-                        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
-                        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+                        $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editArc $gid]
+                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid arc %X %Y]
                     } else {
                         incr unrecognized([$c cget -tag])
                     }
@@ -764,7 +819,6 @@ snit::macro CommonEditorFunctions {} {
               -command [mymethod _contextCancel $itemcontextmenu]
         install canvascontextmenu using menu $win.canvascontextmenu \
               -tearoff no -title {Select item}
-        trace add variable [myvar _gid] write [mymethod _setDirty]
         $hull configure -setdirty [mymethod _setDirty]
     }
 }    
@@ -807,6 +861,8 @@ snit::widgetadaptor SetSizeDialog {
             set e [ttk::entry $vpframe.$w -textvariable $v]
             pack $e -side left -expand yes -fill x
         }
+        $vpframe.minx state readonly
+        $vpframe.miny state readonly
         $self configurelist $args
     }
     method _Set {} {
@@ -928,8 +984,7 @@ snit::widget FritzingPartsEditor {
     option -contextmenu -default {}
     option -setdirty -default {}
     variable _zoomScale 1.0
-    variable _vpscaleX 1.0
-    variable _vpscaleY 1.0
+    variable _vpscale 1.0
     
     constructor {args} {
         set options(-parent) [from args -parent]
@@ -1016,8 +1071,8 @@ snit::widget FritzingPartsEditor {
             set cx [expr {$cx * $inv}]
             set cy [expr {$cy * $inv}]
         }
-        set x [expr {$cx / $_vpscaleX}]
-        set y [expr {$cy / $_vpscaleY}]
+        set x [expr {$cx / $_vpscale}]
+        set y [expr {$cy / $_vpscale}]
         $sizeandvp updatexyposition $x $y
     }
     method coords {tagorid} {
@@ -1031,7 +1086,7 @@ snit::widget FritzingPartsEditor {
         }
         set result [list]
         foreach {x y} $coords {
-            lappend result [expr {$x / $_vpscaleX}] [expr {$y / $_vpscaleY}]
+            lappend result [expr {$x / $_vpscale}] [expr {$y / $_vpscale}]
         }
         return $result
     }
@@ -1046,7 +1101,7 @@ snit::widget FritzingPartsEditor {
         }
         set result [list]
         foreach {x y} $bbox {
-            lappend result [expr {$x / $_vpscaleX}] [expr {$y / $_vpscaleY}]
+            lappend result [expr {$x / $_vpscale}] [expr {$y / $_vpscale}]
         }
         return $result
     }
@@ -1060,7 +1115,7 @@ snit::widget FritzingPartsEditor {
         } else {
             set result [eval [list $canvas create] $args]
         }
-        $canvas scale $result 0 0 $_vpscaleX $_vpscaleY
+        $canvas scale $result 0 0 $_vpscale $_vpscale
         return $result
     }
     proc formatZoom {z} {
@@ -1140,12 +1195,15 @@ snit::widget FritzingPartsEditor {
         $self makeVpRect
     }
     method _shrinkwrap {} {
-        #puts stderr "*** $self _shrinkwrap: original bbox (vp coords) is [$self bbox {!viewport}]"
-        set bbox [$canvas bbox {!viewport}]
+        #set orgvpbbox [$self bbox {!viewport}]
+        #$self create rect $orgvpbbox -outline green -width 1 -dash -. -tag orgvpbbox
+        #puts stderr "*** $self _shrinkwrap: original bbox (vp coords) is $orgvpbbox"
+        set bbox [$canvas bbox {!viewport&&!orgvpbbox}]
         #puts stderr "*** $self _shrinkwrap: original bbox (canvas coords) is $bbox"
+        #$canvas create rect $bbox -outline red  -width 1 -dash .- -tag bbox
         lassign $bbox x1 y1 dummy1 dummy2
         $canvas move {!viewport} [expr {0-$x1}] [expr {0-$y1}]
-        set bbox [$self bbox {!viewport}]
+        set bbox [$self bbox {!viewport&&!orgvpbbox&&!bbox}]
         #puts stderr "*** $self _shrinkwrap: moved bbox (vp coords) is $bbox"
         lassign $bbox dummy1 dummy2 objectWidth objectHeight
         set vp [$self cget -viewport]
@@ -1154,28 +1212,24 @@ snit::widget FritzingPartsEditor {
         set scaleW [expr {double($objectWidth) / double($vpwidth)}]
         set scaleH [expr {double($objectHeight) / double($vpheight)}]
         #puts stderr "*** $self _shrinkwrap: size scaling: $scaleW,$scaleH"
+        #puts stderr "*** $self _shrinkwrap: current width is [$self cget -width], current height is [$self cget -height]"
         set newwidth [expr {[$self cget -width]*$scaleW}]
         set newheight [expr {[$self cget -height]*$scaleH}]
-        set newvp [list 0 0 [expr {$vpwidth*$scaleW}] [expr {$vpheight*$scaleH}]]
+        set newvp $bbox
         #puts stderr "*** $self _shrinkwrap: newwidth is $newwidth, newheight is $newheight, newvp is $newvp"
         $self configure -viewport $newvp -width $newwidth -height $newheight
+        $self makeVpRect
         if {$options(-setdirty) ne ""} {
             uplevel #0 $options(-setdirty)
         }
-        $self makeVpRect
     }
     method makeVpRect {} {
         set vp [$self cget -viewport]
+        #puts stderr "*** $self makeVpRect: vp is $vp"
+        lassign $vp dummy dummy vpwidth vpheight 
         set width [$self cget -width]
         set height [$self cget -height]
-        set vpwidth [expr {[lindex $vp 2]-[lindex $vp 0]}]
-        set vpheight [expr {[lindex $vp 3]-[lindex $vp 1]}]
         #puts stderr "*** $self makeVpRect: vpwidth is $vpwidth, vpheight is $vpheight"
-        set vpxscale [expr {double($width)/double($vpwidth)}]
-        set vpyscale [expr {double($height)/double($vpheight)}]
-        #puts stderr "*** $self makeVpRect: vpxscale is $vpxscale, vpyscale is $vpyscale"
-        set aspect   [expr {$vpyscale / $vpxscale}]
-        #puts stderr "*** $self makeVpRect: aspect is $aspect"
         update idle
         set inv [expr {1.0 / double($_zoomScale)}]
         $canvas scale all 0 0 $inv $inv
@@ -1183,18 +1237,18 @@ snit::widget FritzingPartsEditor {
         set cw [winfo reqwidth  $canvas]
         #puts stderr "*** $self makeVpRect: ch is $ch, cw is $cw"
         if {$ch < $cw} {
-            set c $ch
+            set newvpscale [expr {double($ch)/$vpheight}]
         } else {
-            set c $cw
+            set newvpscale [expr {double($cw)/$vpwidth}]
         }
-        set _vpscaleY [expr {($c / $vpheight) * $aspect}]
-        set _vpscaleX [expr {($c / $vpwidth) *  $aspect}]
-        #puts stderr "*** $self makeVpRect: _vpscaleY is $_vpscaleY, _vpscaleX is $_vpscaleX"
+        #puts stderr "*** $self makeVpRect: _vpscale is $_vpscale"
         catch {$canvas delete viewport}
-        $canvas scale all 0 0 $_vpscaleX $_vpscaleY
+        set inv_vpscale [expr {1.0 / double($_vpscale)}]
+        $canvas scale all 0 0 $inv_vpscale $inv_vpscale
+        set _vpscale $newvpscale
+        $canvas scale all 0 0 $_vpscale $_vpscale
         $self create rectangle $vp -tags viewport -fill {} \
               -outline black -dash .
-        #puts stderr "*** $self makeVpRect ch = $ch, cw = $cw"
         if {$vpwidth < $cw} {
             set halfspace [expr {($cw - $vpwidth)/2.0}]
             set srx1 [expr {0-$halfspace}]

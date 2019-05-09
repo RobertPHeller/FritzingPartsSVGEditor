@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:37:01 2019
-#  Last Modified : <190508.1313>
+#  Last Modified : <190509.0848>
 #
 #  Description	
 #
@@ -462,6 +462,7 @@ snit::widgetadaptor BreadboardEditor {
         $self CommonInit Breadboard
         $self configurelist $args
         $hull makeVpRect
+        $self _setClean
     }
     method addpin {} {
         incr _pinno
@@ -487,6 +488,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
+        $self _setDirty
     }
     method _editPin {gid} {
         set tag "gid=$gid"
@@ -527,6 +529,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
+        $self _setDirty
     }
     method addrect {} {
         set result [$addrectdialog draw -title {Add new rectangle}]
@@ -552,6 +555,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+        $self _setDirty
     }
     method _editRect {gid} {
         set tag "gid=$gid"
@@ -600,6 +604,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Shift-KeyPress-e> [mymethod _editRect $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+        $self _setDirty
     }
     method addline {} {
         set result [$addlinedialog draw -title {Add new line}]
@@ -620,6 +625,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+        $self _setDirty
     }
     method _editLine {gid} {
         set tag "gid=$gid"
@@ -653,6 +659,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+        $self _setDirty
     }
     method addcirc {} {
         set result [$addcircdialog draw -title {Add new circle}]
@@ -682,6 +689,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+        $self _setDirty
     }
     method _editCirc {gid} {
         set tag "gid=$gid"
@@ -736,6 +744,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+        $self _setDirty
     }
     method addarc {} {
         set result [$addarcdialog draw -title {Add new arc}]
@@ -768,6 +777,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+        $self _setDirty
     }
     method _editArc {gid} {
         set tag "gid=$gid"
@@ -825,6 +835,7 @@ snit::widgetadaptor BreadboardEditor {
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+        $self _setDirty
     }
     method addtext {} {
         set result [$addtextdialog draw -title {Add new text}]
@@ -839,10 +850,11 @@ snit::widgetadaptor BreadboardEditor {
         set y $opts(-ypos)
         set fill $opts(-color)
         set font [FontMapping MapToTk $opts(-font) $opts(-size)]
-        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor nw
+        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor sw
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+        $self _setDirty
     }
     method _editText {gid} {
         set tag "gid=$gid"
@@ -869,10 +881,11 @@ snit::widgetadaptor BreadboardEditor {
         set y $opts(-ypos)
         set fill $opts(-color)
         set font [FontMapping MapToTk $opts(-font) $opts(-size)]
-        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor nw
+        $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor sw
         $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
         $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+        $self _setDirty
     }
     method read {filename} {
         if {[catch {open $filename r} fp]} {
