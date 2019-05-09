@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:37:01 2019
-#  Last Modified : <190509.1607>
+#  Last Modified : <190509.1844>
 #
 #  Description	
 #
@@ -75,11 +75,12 @@
 # @image latex BreadboardCirc.png "Breadboard Circle Dialog" width=4in
 # @image html  BreadboardCircSmall.png
 # @section BreadboardArc  Arcs
-# Breadboard can be either pie slices or bare arcs.  If the center diameter,
-# the arc will be a pie slice (filled), otherwise, the arc will be a bare arc.
-# The breadboard arc dialog box, shown below, asks for the position (center), 
-# the diameter, the center size (hole diameter), and the color.  The position 
-# and the diameters are in viewport coordinates. The default color is black.
+# Breadboard arcs can be either pie slices or bare arcs.  If the center 
+# diameter, the arc will be a pie slice (filled), otherwise, the arc will be a
+# bare arc. The breadboard arc dialog box, shown below, asks for the position 
+# (center), the diameter, the center size (hole diameter), and the color.  The
+# position  and the diameters are in viewport coordinates. The default color 
+# is black.
 # @image latex BreadboardArc.png "Breadboard Arc Dialog" width=4in
 # @image html  BreadboardArcSmall.png
 # @section BreadboardText Text

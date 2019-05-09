@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:13:34 2019
-#  Last Modified : <190507.1403>
+#  Last Modified : <190509.1951>
 #
 #  Description	
 #
@@ -63,6 +63,10 @@ FritzingPartsSVGEditorLib = $(wildcard Scripts/*.tcl) \
 			    $(wildcard Scripts/*.xpm)
 
 bin_SCRIPTS = FritzingPartsSVGEditor$(EXEEXT)
+man_MANS = man1/FritzingPartsSVGEditor.1
+pkgdatadir = $(datadir)/$(PACKAGE)/Doc
+pkgdata_DATA = FritzingPartsSVGEditor.pdf
+
 
 TCLKIT = $(top_builddir)/BuildData/tclkit${BEXEEXT}
 BUILT_SOURCES = $(TCLKIT)
@@ -128,13 +132,14 @@ endif
 
 
 $(top_builddir)/html/index.html \
-	man1/man1/FritzingPartsSVGEditor.1 \
-	latex/refman.pdf : Doxyfile Scripts/FritzingPartsSVGEditor.tcl \
+	man1/FritzingPartsSVGEditor.1 \
+	FritzingPartsSVGEditor.pdf : Doxyfile Scripts/FritzingPartsSVGEditor.tcl \
 		$(FritzingPartsSVGEditorModules) $(wildcard ExtraDoc/*.h) \
 		ExtraDoc/Version.tcl BuildScripts/tcldoxyfilter.sh
 	-rm -rf man1 html latex
 	$(DOXYGEN)
 	$(MAKE) -C latex
+	mv latex/refman.pdf ./FritzingPartsSVGEditor.pdf
 
 
 Doxyfile: Doxyfile.in

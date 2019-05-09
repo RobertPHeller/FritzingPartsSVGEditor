@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 15:59:34 2019
-#  Last Modified : <190509.1447>
+#  Last Modified : <190509.1941>
 #
 #  Description	
 #
@@ -48,6 +48,7 @@
 # and then finally the current pointer position in the viewport coordinate
 # system.  Additionally, a dashed box is shown on the drawing area showing the
 # bounds of the viewport coordinate system.
+# @addindex Coordinate System
 # @section ToolButtons Tool Buttons
 # To the right of the drawing display area are a collection of tool buttons.
 # There six buttons for inserting graphical elements.  These buttons are tab
@@ -77,6 +78,7 @@ package require tile
 package require ScrollWindow
 package require ButtonBox
 
+# Color type: allow anything winfo rgb accepts.
 snit::type Color {
     pragma -hastypeinfo    no
     pragma -hastypedestroy no
@@ -91,18 +93,23 @@ snit::type Color {
     }
 }
 
+# Allowed Fritzing font names
 snit::enum FontName -values {DroidSans DroidSans-Bold DroidSansMono OCRA}
 
+# Mapping between Tcl/Tk fonts and Fritzing fonts
 snit::type FontMapping {
     pragma -hastypeinfo    no
     pragma -hastypedestroy no
     pragma -hasinstances   no
     
+    # Actual fonts
     typevariable _mappingToTk -array {}
     typevariable _mappingFromTk -array {}
+    # Family maps
     typevariable _familyMapToTk -array {}
     typevariable _familyMapFromTk -array {}
     
+    # Class initializer: initialize the family maps
     typeconstructor {
         foreach f [FontName cget -values] {
             switch $f {
@@ -133,6 +140,10 @@ snit::type FontMapping {
             }
         }
     }
+    
+    # Map a Fritzing font and size to an actual Tcl/Tk font.  Save the mapping 
+    # for later (reuse the font and to deduce the Fritzing font and size from 
+    # the Tcl/Tk font.
     typemethod MapToTk {fontname size} {
         FontName validate $fontname
         if {[info exists _mappingToTk([list $fontname $size])]} {
@@ -145,6 +156,7 @@ snit::type FontMapping {
         set _mappingFromTk($font) [list $fontname $size]
         return $font
     }
+    # Reverse map from a Tcl/Tk font back to a Fritzing font and size
     typemethod MapFromTk {font namevar sizevar} {
         upvar $namevar fontname
         upvar $sizevar size
@@ -155,10 +167,11 @@ snit::type FontMapping {
 }
 
 
+# Angle type
 snit::double Angle -min -360.0 -max 360.0
 
 
-
+# AttributeList type (even element list)
 snit::type AttributeList {
     pragma -hastypeinfo    no
     pragma -hastypedestroy no
@@ -172,6 +185,9 @@ snit::type AttributeList {
         }
     }
 }
+
+# Shared GUI element for additional attributes (not really used, but I thought 
+# it might be).
 snit::widget AttributesBox {
     hulltype ttk::frame
     variable _attrs -array {}
@@ -281,11 +297,14 @@ snit::widget AttributesBox {
     }
 }
 
+
+# Macro to fill in common (but not shared!) elements.
 snit::macro CommonEditorFunctions {} {
-    variable _gid 0
-    variable _pinno 0
-    variable _isdirty no
+    variable _gid 0;# GID to uniquely identify objects (including grouped objects)
+    variable _pinno 0;# Pin numbers
+    variable _isdirty no;# Dirty flag
     
+    # Geomentry helper code
     typevariable PI [expr {asin(1.0)*2.0}]
     proc _radians {degrees} {
         return [expr {($degrees/180.0)*$PI}]
@@ -363,13 +382,16 @@ snit::macro CommonEditorFunctions {} {
         if {$a2 < 0} {set a2 [expr $a2 + 360]}
         #  puts stderr "*** CTCPanel::CurvedBlock_Create: (2) a2 = $a2 ([expr $a2 - $a1])"
     }
-                     
+    
+    # Dirty flag handler passed from above.
     option -dirtyhandler -default {} 
     option -dirtyhandlercontext -default {}
+    # Delegate geometry options to the common part of the editor
     delegate option -width to hull
     delegate option -height to hull
     delegate option -viewport to hull
     delegate option -units to hull
+    # Graphic element dialogs
     component addpindialog
     component addrectdialog
     component addlinedialog
@@ -377,15 +399,19 @@ snit::macro CommonEditorFunctions {} {
     component addarcdialog
     component addtextdialog
     
+    # Item context menu handling
     component itemcontextmenu
     variable _itemContext_gid
     variable _itemContext_itemtype
     component canvascontextmenu
     
+    # Common delete function
     method _delete {gid} {
         $hull delete "gid=$gid"
         $self _setDirty
     }
+    
+    # Common helper procs.
     proc gettagsfromattrs {attrs} {
         set tags [list]
         foreach {k v} $attrs {
@@ -436,6 +462,7 @@ snit::macro CommonEditorFunctions {} {
         }
         return $result
     }
+    # Context menu code
     method _itemContextMenu {gid itemtype X Y} {
         #puts stderr "*** $self _itemContextMenu $gid $itemtype"
         set _itemContext_gid $gid
@@ -560,7 +587,7 @@ snit::macro CommonEditorFunctions {} {
     method _contextCancel {menu} {
         #$menu unpost;# Do I need this?
     }
-    
+    # Dirty and clean methods
     method _setDirty {} {
         set _isdirty yes
         if {$options(-dirtyhandler) ne ""} {
@@ -573,11 +600,13 @@ snit::macro CommonEditorFunctions {} {
             uplevel #0 $options(-dirtyhandler) $options(-dirtyhandlercontext) $_isdirty
         }
     }
-    
+    # Dirty accessor
     method isDirty {} {return $_isdirty}
     
+    # Format for an empty SVG XML object
     typevariable emptySVGFormat {<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:fpe="http://www.deepsoft.com/fpe" x="0%s" y="0%s" width="%f%s" height="%f%s" viewBox="%f %f %f %f" xml:space="preserve" />}
     
+    # Method to clean things out
     method clean {} {
         $hull delete !viewport
         set _gid 0
@@ -587,6 +616,7 @@ snit::macro CommonEditorFunctions {} {
             uplevel #0 $options(-dirtyhandler) $options(-dirtyhandlercontext) $_isdirty
         }
     }
+    # Method to put out the pre-XML header blather
     proc xmlheader {fp generatorType} {
         puts $fp {<?xml version="1.0" encoding="utf-8"?>}
         if {0} {
@@ -611,6 +641,9 @@ snit::macro CommonEditorFunctions {} {
 }
         puts $fp "<!-- Generator: [file tail $::argv0] $Version::VERSION on $Version::target ($generatorType) -->"
     }
+    
+    # Method to loop over a group (SVG <g> tag).  Called recursively for 
+    # embeded groups
     method _processGroup {group groups unrecname} {
         #puts stderr "*** $self _processGroup $group \{$groups\} $unrecname"
         upvar $unrecname unrecognized
@@ -830,6 +863,7 @@ snit::macro CommonEditorFunctions {} {
         }
     }
     
+    # Common initialization code.
     method CommonInit {AddDialogNamespace} {
         install addpindialog using ${AddDialogNamespace}::AddPinDialog $win.addpindialog -parent $win
         install addrectdialog using ${AddDialogNamespace}::AddRectDialog $win.addrectdialog -parent $win
@@ -852,9 +886,12 @@ snit::macro CommonEditorFunctions {} {
     }
 }    
 
+# Viewport type: exactly four doubles
 snit::listtype ViewPort -type snit::double -minlen 4 -maxlen 4
+# Units enum: mm or inch
 snit::enum Units -values {inch mm}
 
+# Set Size Dialog
 snit::widgetadaptor SetSizeDialog {
     option -width  -default 25.4 -type snit::double
     option -height -default 25.4 -type snit::double
@@ -917,6 +954,7 @@ snit::widgetadaptor SetSizeDialog {
     }
 }
 
+# Size, Viewport, etc. widget at the bottom
 snit::widget SizeAndViewport {
     hulltype ttk::frame
     option -width  -default 25.4 -type snit::double
@@ -976,6 +1014,7 @@ snit::widget SizeAndViewport {
     }
 }
 
+# Generic editor widget.  All of the hairy magic happens here.
 snit::widget FritzingPartsEditor {    
     # button-constructor name args...
     typevariable _Tools {

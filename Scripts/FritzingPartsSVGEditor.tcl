@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:29:23 2019
-#  Last Modified : <190509.1543>
+#  Last Modified : <190509.1915>
 #
 #  Description	
 #
@@ -78,8 +78,20 @@
 # <li><a class="el" href="FritzingPartsBreadboardEditor.html#BreadboardText">Text</a></li>
 # </ol></li>
 # <li><a class="el" href="FritzingPartsSchematicEditor.html">Schematic Editor</a><ol type="a">
+# <li><a class="el" href="FritzingPartsSchematicEditor.html#SchematicPin">Pins</a></li>
+# <li><a class="el" href="FritzingPartsSchematicEditor.html#SchematicRect">Rectangles</a></li>
+# <li><a class="el" href="FritzingPartsSchematicEditor.html#SchematicLine">Lines</a></li>
+# <li><a class="el" href="FritzingPartsSchematicEditor.html#SchematicCirc">Circles</a></li>
+# <li><a class="el" href="FritzingPartsSchematicEditor.html#SchematicArc">Arcs</a></li>
+# <li><a class="el" href="FritzingPartsSchematicEditor.html#SchematicText">Text</a></li>
 # </ol></li>
 # <li><a class="el" href="FritzingPartsPCBEditor.html">PCB Editor</a><ol type="a">
+# <li><a class="el" href="FritzingPartsPCBEditor.html#PCBPin">Pins</a></li>
+# <li><a class="el" href="FritzingPartsPCBEditor.html#PCBRect">Rectangles</a></li>
+# <li><a class="el" href="FritzingPartsPCBEditor.html#PCBLine">Lines</a></li>
+# <li><a class="el" href="FritzingPartsPCBEditor.html#PCBCirc">Circles</a></li>
+# <li><a class="el" href="FritzingPartsPCBEditor.html#PCBArc">Arcs</a></li>
+# <li><a class="el" href="FritzingPartsPCBEditor.html#PCBText">Text</a></li>
 # </ol></li>
 # <li><a class="el" href="help.html">Help</a></li>
 # <li><a class="el" href="Version.html">Version</a></li>
@@ -112,7 +124,8 @@
 # @endlatexonly
 #
 # @defgroup FritzingPartsSVGEditor Fritzing Parts SVG Editor
-# Create and edit SVG SVG files used as the images for the Fritzing Parts editor.
+# Create and edit SVG SVG files used as the images for the Fritzing Parts 
+# editor.
 #
 # @section FritzingPartsSVGEditorSYNOPSIS SYNOPSIS
 #
@@ -144,6 +157,8 @@
 # Preferences file (Tcl/Tk otions format):
 #
 # \$(HOME)/.fritzingpartssvgeditor
+# or
+# \$(HOME)/fritzingpartssvgeditor.rc
 #
 # @section FritzingPartsSVGEditorAUTHOR AUTHOR
 # Robert Heller \<heller\@deepsoft.com\>
@@ -211,6 +226,7 @@
 #  <dt>Viewport Width</dt><dd>The numerical width of the viewport</dd>
 #  <dt>Viewport Height</dt><dd>The numerical height of the viewport</dd>
 #  </dl>
+# @addindex Coordinate System
 #
 # These are the default initial values to use.  When loading a file, the 
 # values stored in the file are used.  The aspect ratio of the Width to Height
@@ -248,6 +264,9 @@ image create photo banner -file [file join $ImageDir banner.gif]
 image create photo DeepwoodsBanner -file [file join $ImageDir DeepwoodsBanner.gif]
 
 
+
+# Preferences class object.
+# Encapsulates the Configuration (Preferences).
 snit::type FritzingPartsSVGEditorPreferences {
     ::ReadConfiguration::ConfigurationType \
           {Units units enumerated mm {mm inch}} \
@@ -258,23 +277,30 @@ snit::type FritzingPartsSVGEditorPreferences {
           
 }
 
+# Main program class object
+# This is a SNIT type with no instancess (eg a pure static class).
 snit::type FritzingPartsSVGEditor {
     pragma -hastypeinfo    no
     pragma -hastypedestroy no
     pragma -hasinstances   no
     
-    typecomponent splash
-    typecomponent mainwindow
-    typecomponent   notebook
-    typecomponent     breadboardeditor
-    typecomponent     schematiceditor
-    typecomponent     pcbeditor
+    # Type components (static elements, mostly widgets)
+    typecomponent splash;# Spash screen
+    typecomponent mainwindow;# Main GUI Window
+    typecomponent   notebook;# Tab notebook
+    typecomponent     breadboardeditor;# Breadboard Editor tab
+    typecomponent     schematiceditor;# Schematic Editor tab
+    typecomponent     pcbeditor;# PCB Editor tab
+    typecomponent preferences;# Preferences object
+    
+    # Clean and dirty images.
     typevariable  _clean
     typevariable  _dirty
     
-    typecomponent preferences
+    # Delegate preferences accessors.
     delegate typemethod {preferences *} to preferences
-
+    
+    # Main menubar configuration.
     typevariable _menu {
         {&File} {file:menu} {file} 0 {
             {command {&New} {file:new} {New blank SVG files} {Ctrl n} -command "[mytypemethod _new]"}
@@ -310,9 +336,13 @@ snit::type FritzingPartsSVGEditor {
         }
     }
     
+    # Current File prefix
     typevariable _currentFilePrefix {}
+    # Current (start up) progress.
     typevariable _currentProgress 0
     
+    # Dirty/Clean handler.  Sets the tab image to either the clean 
+    # (transparent) or dirty (solid red).
     typemethod _dirtyHandler {tabid dirty} {
         if {[llength [$notebook tabs]] <= $tabid} {return}
         if {$dirty} {
@@ -323,48 +353,68 @@ snit::type FritzingPartsSVGEditor {
     }
     
         
-    
+    # Main program itself.
     typeconstructor {
+        # Command line words.
         global argv
         
+        # Create the splash screen
         set splash [splash .fritzingpeditSlash \
                     -title [format {Fritzing Parts SVG Editor %s on %s, Copyright (C) 2019 Robert Heller D/B/A Deepwoods Software. The Fritzing Parts SVG Editor comes with ABSOLUTELY NO WARRANTY; for details select 'Warranty...' under the Help menu.  This is free software, and you are welcome to redistribute it under certain conditions; select 'Copying...' under the Help menu.} \
                             $Version::VERSION $Version::target] \
                     -icon banner -image DeepwoodsBanner -background {#2ba2bf} \
                     -titleforeground white -statusforeground {black}]
+        # Start up message
         $type SplashWorkMessage "Building Main window" 0
+        # Direct window deletes to our friendly exit function.
         wm protocol . WM_DELETE_WINDOW "[mytypemethod _exit]"
         #puts stderr "*** set up WM_DELETE_WINDOW"
+        # Withdraw the main window while building it (hide the construction
+        # process).
         wm withdraw .
+        # Set the title
         wm title . [format {Fritzing Parts SVG Editor %s on %s} \
                     $Version::VERSION $Version::target]
+        # Process the menu.
         set menu [subst $_menu]
         #puts stderr "*** menu is $menu"
+        # Create the main window
         set mainwindow [mainwindow .main -menu $menu -scrolling no]
         pack $mainwindow -expand yes -fill both
         #$mainwindow toolbar add tools
         #$mainwindow toolbar show tools
+        # get the frame to insert stuff into.
         set frame [$mainwindow scrollwindow getframe]
+        # Create the notebook
         set notebook [ttk::notebook $frame.notebook]
         $mainwindow scrollwindow setwidget $notebook
+        # Set up help.
         HTMLHelp setDefaults "$::HelpDir" "index.html#toc"
+        # Set up the preferences.
         set preferences FritzingPartsSVGEditorPreferences
+        # Load the preferences
         $type preferences load
+        # get the preferences.
         set units [$preferences getoption units]
         set width [$preferences getoption width]
         set height [$preferences getoption height]
         set viewport [list 0 0 [$preferences getoption vpwidth] [$preferences getoption vpheight]]
-        $type SplashWorkMessage "Building breadboard editor" 20
+        # Start building the editor panes.
+        $type SplashWorkMessage "Building breadboard editor" 25
+        # Load clean/dirty images.
         set _clean [IconImage image clean]
         set _dirty [IconImage image dirty]
+        # Create the breadboard editor.
         set breadboardeditor [BreadboardEditor $notebook.breadboardeditor \
                               -dirtyhandler [mytypemethod _dirtyHandler] \
                               -dirtyhandlercontext 0 -units $units \
                               -width $width -height $height \
                               -viewport $viewport]
+        # Stick it into the notebook.
         $notebook add $breadboardeditor -sticky news -text Breadboard \
               -image $_clean -compound right
-        $type SplashWorkMessage "Building schematic editor" 40
+        # Ditto for the Schematic Editor
+        $type SplashWorkMessage "Building schematic editor" 25
         set schematiceditor [SchematicEditor $notebook.schematiceditor \
                              -dirtyhandler [mytypemethod _dirtyHandler] \
                              -dirtyhandlercontext 1 -units $units \
@@ -372,7 +422,8 @@ snit::type FritzingPartsSVGEditor {
                               -viewport $viewport]
         $notebook add $schematiceditor -sticky news -text Schematic \
               -image $_clean -compound right
-        $type SplashWorkMessage "Building PCB editor" 60
+        # And the PCB editor.
+        $type SplashWorkMessage "Building PCB editor" 25
         set pcbeditor [PCBEditor $notebook.pcbeditor \
                        -dirtyhandler [mytypemethod _dirtyHandler] \
                        -dirtyhandlercontext 2 -units $units \
@@ -380,15 +431,20 @@ snit::type FritzingPartsSVGEditor {
                               -viewport $viewport]
         $notebook add $pcbeditor -sticky news -text PCB \
               -image $_clean -compound right
+        # Almost done.  Enable tab traversal.
         ttk::notebook::enableTraversal $notebook
+        # Select the Breadboard editor
         $notebook select 0
+        # Unveil the main window
         $mainwindow showit
-        $type SplashWorkMessage "Done" 100
+        $type SplashWorkMessage "Done" 30
         update idle
+        # Load file(s) from the commandline.
         if {[llength $argv] > 0} {
             $type _open [lindex $argv 0]
         }
     }
+    # Method to update the splash screen's progress bar and status.
     typemethod SplashWorkMessage {message percent} {
         incr _currentProgress $percent
         if {$_currentProgress > 100} {set _currentProgress 100}
@@ -399,7 +455,7 @@ snit::type FritzingPartsSVGEditor {
             after 10000 [list catch "destroy .fritzingpeditSlash"]
         }
     }
-        
+    # Friendly program exit.  Check for unsaved data and offer to save it.
     typemethod _exit {{dontask no}} {
         if {$dontask} {
             set answer yes
@@ -424,6 +480,7 @@ snit::type FritzingPartsSVGEditor {
             }
         }
     }
+    # Open new images.  Check for unsaved work.
     typemethod _new {} {
         if {[$breadboardeditor isDirty] || 
             [$schematiceditor isDirty] ||
@@ -440,6 +497,7 @@ snit::type FritzingPartsSVGEditor {
             return yes
         }
     }
+    # Wrapper for tk_getOpenFile that returns a prefix.
     proc getOpenPrefix {defaultprefix} {
         if {$defaultprefix ne ""} {
             set defaultfile "${defaultprefix}_Breadboard.svg"
@@ -459,6 +517,7 @@ snit::type FritzingPartsSVGEditor {
             return [file rootname $filename]
         }
     }
+    # Wrapper for tk_getSaveFile that returns a prefix.
     proc getSavePrefix {defaultprefix} {
         if {$defaultprefix ne ""} {
             set defaultfile "${defaultprefix}_Breadboard.svg"
@@ -478,6 +537,8 @@ snit::type FritzingPartsSVGEditor {
             return [file rootname $filename]
         }
     }
+    # Open and load an existing file. Use the _new method to check for 
+    # unsaved work.
     typemethod _open {{fileprefix {}}} {
         if {![$type _new]} {return}
         if {$fileprefix eq ""} {set fileprefix [getOpenPrefix ""]}
@@ -493,9 +554,11 @@ snit::type FritzingPartsSVGEditor {
         }
         set _currentFilePrefix $fileprefix
     }
+    # Save -- just call _saveas with the current prefix.
     typemethod _save {} {
         $type _saveas $_currentFilePrefix
     }
+    # Saveas -- save the current images.
     typemethod _saveas {{fileprefix {}}} {
         if {$fileprefix eq ""} {set fileprefix [getSavePrefix ""]}
         if {$fileprefix eq ""} {return}
