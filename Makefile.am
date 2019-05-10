@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:13:34 2019
-#  Last Modified : <190510.0859>
+#  Last Modified : <190510.0951>
 #
 #  Description	
 #
@@ -47,7 +47,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = BuildScripts BuildData Scripts ScreenShots ExtraDoc
 EXTRA_DIST = README.md Doxyfile.in FritzingPartsSVGEditor.png \
-	FritzingPartsSVGEditor.desktop
+	FritzingPartsSVGEditor.desktop bootstrap
 
 desktopdir = $(datadir)/applications
 desktop_DATA = FritzingPartsSVGEditor.desktop

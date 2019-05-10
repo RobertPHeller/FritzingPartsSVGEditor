@@ -48,6 +48,7 @@ EXTRA_DIST = \
 	AddKitDir.kit AddKitDir.tcl AddKitFile.kit AddKitFile.tcl \
 	MakePkgIndex.kit MakePkgIndex.tcl MakeVersion.tcl MakeVersion.kit \
 	MakeVersionHelp.tcl MakeVersionHelp.kit sdx.kit \
-	MacOSXPlist.tcl MacOSXPlist.kit macappInstall.sh tcldoxyfilter.sh.in
+	MacOSXPlist.tcl MacOSXPlist.kit macappInstall.sh tcldoxyfilter.sh.in \
+	tcl2dox.kit tcl2dox.tcl
 
 

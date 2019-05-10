@@ -64,6 +64,11 @@ TEA_INIT([3.5])
 TEA_PATH_TCLCONFIG
 TEA_LOAD_TCLCONFIG
 TEA_PROG_TCLSH
+if test ${cross_compiling} = "no"; then
+  HOSTTCLSH=${TCLSH_PROG}
+else
+  AC_PATH_PROGS(HOSTTCLSH,[tclsh8.5 tclsh])
+fi
 AX_SNIT
 AX_CSV
 AX_STRUCT
