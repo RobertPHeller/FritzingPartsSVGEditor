@@ -52,6 +52,12 @@ without trouble on any Linux system of the proper arch.  (I did not bother to
 build a 32-bit x86 version, since I doubt many people still use 32-bit 
 x86 machines.
 
+Binaries are on my FTP site:
+
+ftp://ftp.deepsoft.com/pub/deepwoods/Other/FritzingPartsSVGEditor/
+or
+http://files.deepsoft.com/Other/FritzingPartsSVGEditor/
+
 # Questions?
 
 Send me an E-Mail: Robert Heller <heller@deepsoft.com>
