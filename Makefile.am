@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:13:34 2019
-#  Last Modified : <190510.0824>
+#  Last Modified : <190510.0859>
 #
 #  Description	
 #
@@ -74,6 +74,23 @@ man_MANS = man1/FritzingPartsSVGEditor.1
 pkgdatadir = $(datadir)/$(PACKAGE)/Doc
 pkgdata_DATA = FritzingPartsSVGEditor.pdf
 
+install-data-hook: $(top_builddir)/html/index.html
+	$(INSTALL) -d $(DESTDIR)$(pkgdatadir)/html
+	for p in html/*; do \
+	   if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	    f=`echo $$p | sed -e 's|^.*/||'`; \
+	    echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(pkgdatadir)/html/$$f'"; \
+	    $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(pkgdatadir)/html/$$f"; \
+	done
+
+uninstall-hook:  
+	$(INSTALL) -d $(DESTDIR)$(pkgdatadir)/html
+	for p in html/*; do \
+	   if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	    f=`echo $$p | sed -e 's|^.*/||'`; \
+	    echo " rm -f '$(DESTDIR)$(pkgdatadir)/html/$$f'"; \
+	    rm -f "$(DESTDIR)$(pkgdatadir)/html/$$f"; \
+	done
 
 TCLKIT = $(top_builddir)/BuildData/tclkit${BEXEEXT}
 BUILT_SOURCES = $(TCLKIT)

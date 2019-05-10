@@ -51,19 +51,4 @@ EXTRA_DIST = generateLib_pkgIndex.sh generateLib_pkgIndex.tcl \
 	MakeVersionHelp.tcl MakeVersionHelp.kit sdx.kit \
 	MacOSXPlist.tcl MacOSXPlist.kit macappInstall.sh tcldoxyfilter.sh.in
 
-KITFILES = AddKitDir.kit AddKitFile.kit MakePkgIndex.kit sdx.kit
-if MACOSX
-KITFILES += MacOSXPlist.kit
-endif
-
-noinst_SCRIPTS = $(KITFILES)
-
-install-data-hook: $(KITFILES)
-	test -z "$(pkglibdir)" || $(mkdir_p) "$(DESTDIR)$(pkglibdir)"
-	@list='$(KITFILES)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  f=`echo $$p | sed -e 's|^.*/||'`; \
-	  echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(pkglibdir)/$$f'"; \
-	  $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(pkglibdir)/$$f"; \
-	done
 

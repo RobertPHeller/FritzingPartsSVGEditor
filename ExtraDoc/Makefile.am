@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Mon May 6 01:13:58 2019
-#  Last Modified : <190507.1150>
+#  Last Modified : <190510.0840>
 #
 #  Description	
 #
@@ -49,11 +49,13 @@ CLEANFILES = Version.tcl
 Version.tcl : $(top_builddir)/config.status
 	echo '## @page Version Version' >Version.tcl
 	echo "# Version is $(VERSION) on $(target)." >>Version.tcl
+	echo "# Built on `date`, build system: `uname -n -m`" >>Version.tcl
 	echo "#" >>Version.tcl
 	echo "" >>Version.tcl
 	echo "namespace eval Version {" >>Version.tcl
 	echo "    variable VERSION {$(VERSION)}" >>Version.tcl
 	echo "    variable target  {$(target)}"  >>Version.tcl
+	echo "    variable build   {`date +%Y%m%d%H%M`-`uname -n`-`uname -m`}" >>Version.tcl
 	echo "}" >>Version.tcl
 	echo "package provide Version $(VERSION)" >>Version.tcl
 
