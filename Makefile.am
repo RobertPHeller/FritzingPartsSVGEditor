@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:13:34 2019
-#  Last Modified : <190510.0818>
+#  Last Modified : <190510.0824>
 #
 #  Description	
 #
@@ -50,10 +50,10 @@ EXTRA_DIST = README.md Doxyfile.in FritzingPartsSVGEditor.png \
 	FritzingPartsSVGEditor.desktop
 
 desktopdir = $(datadir)/applications
-desktop_DATA = Dispatcher.desktop
+desktop_DATA = FritzingPartsSVGEditor.desktop
 
 pixmapdir = $(datadir)/pixmaps
-pixmap_DATA = Dispatcher.png
+pixmap_DATA = FritzingPartsSVGEditor.png
 
 clean-local:
 	-rm -rf man html latex FritzingPartsSVGEditor.pdf
