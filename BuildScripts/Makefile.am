@@ -44,8 +44,7 @@
 #* 
 #* $Id: Makefile.am 2088 2015-08-21 17:39:43Z heller $ 
 #* 
-EXTRA_DIST = generateLib_pkgIndex.sh generateLib_pkgIndex.tcl \
-	versioninfo2libversion.tcl \
+EXTRA_DIST = \
 	AddKitDir.kit AddKitDir.tcl AddKitFile.kit AddKitFile.tcl \
 	MakePkgIndex.kit MakePkgIndex.tcl MakeVersion.tcl MakeVersion.kit \
 	MakeVersionHelp.tcl MakeVersionHelp.kit sdx.kit \
