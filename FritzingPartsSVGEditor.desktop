@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Fritzing Parts SVG Editor
+Exec=FritzingPartsSVGEditor
+Icon=FritzingPartsSVGEditor.png
+Categories=Development;Engineering;Electronics
+Type=Application
+Terminal=false
+Comment=PCB-Suite
+
