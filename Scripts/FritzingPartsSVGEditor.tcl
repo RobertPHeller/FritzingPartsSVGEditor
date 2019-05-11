@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:29:23 2019
-#  Last Modified : <190509.1915>
+#  Last Modified : <190511.1001>
 #
 #  Description	
 #
@@ -68,6 +68,7 @@
 # <li><a class="el" href="FritzingPartsEditor.html">Common GUI elements</a><ol type="a">
 # <li><a class="el" href="FritzingPartsEditor.html#CoordinateInfo">Coordinate Information</a></li>
 # <li><a class="el" href="FritzingPartsEditor.html#ToolButtons">Tool Buttons</a></li>
+# <li><a class="el" href="FritzingPartsEditor.html#bindings">Keyboard and mouse bindings</a></li>
 # </ol></li>
 # <li><a class="el" href="FritzingPartsBreadboardEditor.html">Breadboard Editor</a><ol type="a">
 # <li><a class="el" href="FritzingPartsBreadboardEditor.html#BreadboardPin">Pins</a></li>

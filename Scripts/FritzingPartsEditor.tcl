@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 15:59:34 2019
-#  Last Modified : <190511.0922>
+#  Last Modified : <190511.0959>
 #
 #  Description	
 #
@@ -68,8 +68,10 @@
 # @section bindings Keyboard and mouse bindings
 # There are some common keyboard and pointer bindings. There is a context menu
 # bound to the right pointer button.  Right-clicking on a graphical element 
-# brings up a menu of things you can do to that element: delete or edit.
-# Additionall, the F1 key is bound to zoom in, the F2 key is bound to zoom out,
+# brings up a menu of things you can do to that element: delete or edit, with
+# keyboard accelerators Delete and E, respectively.
+#
+# Additionally, the F1 key is bound to zoom in, the F2 key is bound to zoom out,
 # and the F3 is bound to zoom 1:1.
 
 
@@ -1041,9 +1043,11 @@ snit::macro CommonEditorFunctions {} {
         
         install itemcontextmenu using menu $win.itemcontextmenu -tearoff no \
               -title {Item nnn}
-        $itemcontextmenu add command -label Delete \
+        $itemcontextmenu add command -label {Delete Item} \
+              -accelerator Delete \
               -command [mymethod _contextDelete]
-        $itemcontextmenu add command -label Edit   \
+        $itemcontextmenu add command -label {Edit Item} \
+              -accelerator E \
               -command [mymethod _contextEdit]
         $itemcontextmenu add command -label Cancel \
               -command [mymethod _contextCancel $itemcontextmenu]
