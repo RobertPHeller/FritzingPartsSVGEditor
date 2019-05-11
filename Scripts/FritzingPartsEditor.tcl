@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 15:59:34 2019
-#  Last Modified : <190509.1941>
+#  Last Modified : <190511.0922>
 #
 #  Description	
 #
@@ -403,12 +403,17 @@ snit::macro CommonEditorFunctions {} {
     component itemcontextmenu
     variable _itemContext_gid
     variable _itemContext_itemtype
+    variable _itemContext_label
     component canvascontextmenu
     
     # Common delete function
-    method _delete {gid} {
-        $hull delete "gid=$gid"
-        $self _setDirty
+    method _delete {gid {label {}}} {
+        if {$label eq {} ||
+            [tk_messageBox -type yesno -default no -icon question \
+             -message "Really delete $label?"]} {
+            $hull delete "gid=$gid"
+            $self _setDirty
+        }
     }
     
     # Common helper procs.
@@ -478,30 +483,31 @@ snit::macro CommonEditorFunctions {} {
                         break
                     }
                 }
-                $itemcontextmenu configure -title [format {Pin %d} $pinno]
+                set _itemContext_label [format {Pin %d} $pinno]
             }
             rect {
-                $itemcontextmenu configure -title [format {Rectangle %d} $gid]
+                set _itemContext_label [format {Rectangle %d} $gid]
             }
             line {
-                $itemcontextmenu configure -title [format {Line %d} $gid]
+                set _itemContext_label [format {Line %d} $gid]
             }
             circ {
-                $itemcontextmenu configure -title [format {Circle %d} $gid]
+                set _itemContext_label [format {Circle %d} $gid]
             }
             arc {
-                $itemcontextmenu configure -title [format {Arc %d} $gid]
+                set _itemContext_label [format {Arc %d} $gid]
             }
             text {
-                $itemcontextmenu configure -title [format {Text %d} $gid]
+                set _itemContext_label [format {Text %d} $gid]
             }
         }
+        $itemcontextmenu configure -title $_itemContext_label
         $itemcontextmenu post $X $Y
     }
-    method _canvasContextMenu {items X Y} {
-        #puts stderr "*** $self _canvasContextMenu $items"
-        if {[llength $items] < 2} {return}
+    method _editItems {items X Y} {
+        if {[llength $items] < 1} {return}
         $canvascontextmenu delete 0 end
+        set count 0
         foreach i $items {
             set tags [$hull itemcget $i -tags]
             set gid -1
@@ -519,36 +525,196 @@ snit::macro CommonEditorFunctions {} {
             }
             switch $itemtype {
                 pin {
+                    set label [format {Pin %d} $pinno]
+                    if {[catch {$canvascontextmenu index $label}]} {
+                        $canvascontextmenu add command \
+                              -label [format {Pin %d} $pinno] \
+                              -command [mymethod _editPin $gid]
+                        incr count
+                    }
+                }
+                rect {
                     $canvascontextmenu add command \
-                          -label [format {Pin %d} $pinno] \
-                          -command [mymethod _itemContextMenu $gid $itemtype $X $Y]
+                          -label [format {Rectangle %d} $gid] \
+                          -command [mymethod _editRect $gid]
+                    incr count
+                }
+                line {
+                    $canvascontextmenu add command \
+                          -label [format {Line %d} $gid] \
+                          -command [mymethod _editLine $gid]
+                    incr count
+                }
+                circ {
+                    $canvascontextmenu add command \
+                          -label [format {Circle %d} $gid] \
+                          -command [mymethod _editCirc $gid]
+                    incr count
+                }
+                arc {
+                    $canvascontextmenu add command \
+                          -label [format {Arc %d} $gid] \
+                          -command [mymethod _editArc $gid]
+                    incr count
+                }
+                text {
+                    $canvascontextmenu add command \
+                          -label [format {Text %d} $gid] \
+                          -command [mymethod _editText $gid]
+                    incr count
+                }
+            }
+        }
+        if {$count < 1} {return}
+        if {$count == 1} {
+            $canvascontextmenu invoke 0
+            return
+        }
+        $canvascontextmenu add command -label Cancel \
+              -command [mymethod _contextCancel $canvascontextmenu]
+        $canvascontextmenu post  $X $Y
+    }
+    method _deleteItems {items X Y} {
+        if {[llength $items] < 1} {return}
+        $canvascontextmenu delete 0 end
+        set count 0
+        foreach i $items {
+            set tags [$hull itemcget $i -tags]
+            set gid -1
+            set pinno -1
+            set itemtype {}
+            foreach t $tags {
+                regexp {^gid=([[:digit:]]+)$} $t => gid
+                regexp {^type=(.+)$} $t -> itemtype
+            }
+            if {$gid < 0 || $itemtype eq {}} {continue}
+            foreach t [$self getunionoftags $gid] {
+                if {[regexp {^pinno=([[:digit:]]+)$} $t => pinno] > 0} {
+                    break
+                }
+            }
+            switch $itemtype {
+                pin {
+                    set label [format {Pin %d} $pinno]
+                    if {[catch {$canvascontextmenu index $label}]} {
+                        $canvascontextmenu add command \
+                              -label $label \
+                              -command [mymethod _delete $gid $label]
+                        incr count
+                    }
+                }
+                rect {
+                    set label [format {Rectangle %d} $gid]
+                    $canvascontextmenu add command \
+                          -label $label \
+                          -command [mymethod _delete $gid $label]
+                    incr count
+                }
+                line {
+                    set label [format {Line %d} $gid]
+                    $canvascontextmenu add command \
+                          -label $label  \
+                          -command [mymethod _delete $gid $label]
+                    incr count
+                }
+                circ {
+                    set label [format {Circle %d} $gid]
+                    $canvascontextmenu add command \
+                          -label $label \
+                          -command [mymethod _delete $gid $label]
+                    incr count
+                }
+                arc {
+                    set label [format {Arc %d} $gid]
+                    $canvascontextmenu add command \
+                          -label $label \
+                          -command [mymethod _delete $gid $label]
+                    incr count
+                }
+                text {
+                    set label [format {Text %d} $gid]
+                    $canvascontextmenu add command \
+                          -label $label \
+                          -command [mymethod _delete $gid $label]
+                    incr count
+                }
+            }
+        }
+        if {$count < 1} {return}
+        if {$count == 1} {
+            $canvascontextmenu invoke 0
+            return
+        }
+        $canvascontextmenu add command -label Cancel \
+              -command [mymethod _contextCancel $canvascontextmenu]
+        $canvascontextmenu post  $X $Y
+    }
+    method _canvasContextMenu {items X Y} {
+        #puts stderr "*** $self _canvasContextMenu $items"
+        if {[llength $items] < 1} {return}
+        $canvascontextmenu delete 0 end
+        set count 0
+        foreach i $items {
+            set tags [$hull itemcget $i -tags]
+            set gid -1
+            set itemtype {}
+            set pinno -1
+            foreach t $tags {
+                regexp {^gid=([[:digit:]]+)$} $t => gid
+                regexp {^type=(.+)$} $t -> itemtype
+            }
+            if {$gid < 0 || $itemtype eq {}} {continue}
+            foreach t [$self getunionoftags $gid] {
+                if {[regexp {^pinno=([[:digit:]]+)$} $t => pinno] > 0} {
+                    break
+                }
+            }
+            switch $itemtype {
+                pin {
+                    set label [format {Pin %d} $pinno]
+                    if {[catch {$canvascontextmenu index $label}]} {
+                        $canvascontextmenu add command \
+                              -label [format {Pin %d} $pinno] \
+                              -command [mymethod _itemContextMenu $gid $itemtype $X $Y]
+                        incr count
+                    }
                 }
                 rect {
                     $canvascontextmenu add command \
                           -label [format {Rectangle %d} $gid] \
                           -command [mymethod _itemContextMenu $gid $itemtype $X $Y]
+                    incr count
                 }
                 line {
                     $canvascontextmenu add command \
                           -label [format {Line %d} $gid] \
                           -command [mymethod _itemContextMenu $gid $itemtype $X $Y]
+                    incr count
                 }
                 circ {
                     $canvascontextmenu add command \
                           -label [format {Circle %d} $gid] \
                           -command [mymethod _itemContextMenu $gid $itemtype $X $Y]
+                    incr count
                 }
                 arc {
                     $canvascontextmenu add command \
                           -label [format {Arc %d} $gid] \
                           -command [mymethod _itemContextMenu $gid $itemtype $X $Y]
+                    incr count
                 }
                 text {
                     $canvascontextmenu add command \
                           -label [format {Text %d} $gid] \
                           -command [mymethod _itemContextMenu $gid $itemtype $X $Y]
+                    incr count
                 }
             }
+        }
+        if {$count < 1} {return}
+        if {$count == 1} {
+            $canvascontextmenu invoke 0
+            return
         }
         $canvascontextmenu add command -label Cancel \
               -command [mymethod _contextCancel $canvascontextmenu]
@@ -556,7 +722,7 @@ snit::macro CommonEditorFunctions {} {
     }
     method _contextDelete {} {
         #$itemcontextmenu unpost;# Do I need this?
-        $self _delete $_itemContext_gid
+        $self _delete $_itemContext_gid $_itemContext_label
     }
     method _contextEdit {} {
         #puts stderr "*** $self _contextEdit"
@@ -584,6 +750,7 @@ snit::macro CommonEditorFunctions {} {
             }
         }
     }
+    
     method _contextCancel {menu} {
         #$menu unpost;# Do I need this?
     }
@@ -690,9 +857,9 @@ snit::macro CommonEditorFunctions {} {
                     } else {
                         $hull create rectangle $x1 $y1 $x2 $y2 -tags $tags -fill {} -outline $outline -width $width
                     }
-                    $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
-                    $hull bind "gid=$gid" <KeyPress-e> [mymethod _editRect $gid]
-                    $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid rect %X %Y]
+                    #$hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                    #$hull bind "gid=$gid" <KeyPress-e> [mymethod _editRect $gid]
+                    #$hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid rect %X %Y]
                 }
                 circle {
                     if {$gid eq "" || $gid <= 0} {
@@ -739,13 +906,13 @@ snit::macro CommonEditorFunctions {} {
                     #puts stderr "*** $self _processGroup: x1 = $x1, y1 = $y1, x2 = $x2, y2 = $y2"
                     #puts stderr "*** $self _processGroup: ispin = $ispin"
                     $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline $outline -width $width
-                    $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                    #$hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
                     if {$ispin} {
-                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
-                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
+                        #$hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
+                        #$hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
                     } else {
-                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editCirc $gid]
-                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid circ %X %Y]
+                        #$hull bind "gid=$gid" <KeyPress-e> [mymethod _editCirc $gid]
+                        #$hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid circ %X %Y]
                     }
                 }
                 line {
@@ -776,13 +943,13 @@ snit::macro CommonEditorFunctions {} {
                     set outline [$c attribute stroke]
                     set width [$c attribute stroke-width]
                     $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $outline -width $width
-                    $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                    #$hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
                     if {$ispin} {
-                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
-                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
+                        #$hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
+                        #$hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
                     } else {
-                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editLine $gid]
-                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid line %X %Y]
+                        #$hull bind "gid=$gid" <KeyPress-e> [mymethod _editLine $gid]
+                        #$hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid line %X %Y]
                     }
                 }
                 text {
@@ -808,13 +975,13 @@ snit::macro CommonEditorFunctions {} {
                     set fill [$c attribute fill]
                     set font [FontMapping MapToTk [$c attribute font-family] [$c attribute font-size]]
                     $hull create text $x $y -text [$c data] -font $font -tags $tags -fill $fill -anchor sw
-                    $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                    #$hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
                     if {$ispin} {
-                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
-                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
+                        #$hull bind "gid=$gid" <KeyPress-e> [mymethod _editPin $gid]
+                        #$hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid pin %X %Y]
                     } else {
-                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editText $gid]
-                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid text %X %Y]
+                        #$hull bind "gid=$gid" <KeyPress-e> [mymethod _editText $gid]
+                        #$hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid text %X %Y]
                     }
                 }
                 path {
@@ -849,9 +1016,9 @@ snit::macro CommonEditorFunctions {} {
                         set x2 [expr {$cx+$r1}]
                         set y2 [expr {$cy+$r1}]
                         $hull create arc $x1 $y1 $x2 $y2 -style $arcstyle -start $start -extent $extent -tags $tags -fill $fill -outline $outline -width $width
-                        $hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
-                        $hull bind "gid=$gid" <KeyPress-e> [mymethod _editArc $gid]
-                        $hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid arc %X %Y]
+                        #$hull bind "gid=$gid" <KeyPress-Delete> [mymethod _delete $gid]
+                        #$hull bind "gid=$gid" <KeyPress-e> [mymethod _editArc $gid]
+                        #$hull bind "gid=$gid" <Button-3> [mymethod _itemContextMenu $gid arc %X %Y]
                     } else {
                         incr unrecognized([$c cget -tag])
                     }
@@ -1050,6 +1217,8 @@ snit::widget FritzingPartsEditor {
     
     option -parent -default {} -readonly yes -type snit::window
     option -contextmenu -default {}
+    option -edititems -default {}
+    option -deleteitems -default {}
     option -setdirty -default {}
     variable _zoomScale 1.0
     variable _vpscale 1.0
@@ -1088,6 +1257,9 @@ snit::widget FritzingPartsEditor {
         bind $canvas <F2> [mymethod zoomBy .5]
         bind $canvas <F3> [mymethod setZoom 1]
         bind $canvas <Button-3> [mymethod _contextMenu %x %y]
+        bind $canvas <e> [mymethod _editItems %x %y]
+        bind $canvas <E> [mymethod _editItems %x %y]
+        bind $canvas <Delete> [mymethod _deleteItems %x %y]
         install sizeandvp using SizeAndViewport $win.sizeandvp
         pack $sizeandvp -fill x
         bind $canvas <Motion> [mymethod xyposition %x %y]
@@ -1353,6 +1525,38 @@ snit::widget FritzingPartsEditor {
             set X [expr {[winfo rootx $canvas]+$x}]
             set Y [expr {[winfo rooty $canvas]+$y}]
             uplevel #0 $options(-contextmenu) $items $X $Y
+        }
+    }
+    method _editItems  {x y} {
+        #puts stderr "*** $self _editItems $x $y"
+        set items [$canvas find closest [$canvas canvasx  $x] \
+                   [$canvas canvasy $y] 20]
+        set vp [$canvas find withtag viewport]
+        set vpindex [lsearch -exact $items $vp]
+        if {$vpindex >= 0} {
+            set items [lreplace $items $vpindex $vpindex]
+        }
+        if {[llength $items] == 0} {return}
+        if {$options(-edititems) ne ""} {
+            set X [expr {[winfo rootx $canvas]+$x}]
+            set Y [expr {[winfo rooty $canvas]+$y}]
+            uplevel #0 $options(-edititems) $items $X $Y
+        }
+    }
+    method _deleteItems  {x y} {
+        #puts stderr "*** $self _deleteItems $x $y"
+        set items [$canvas find closest [$canvas canvasx  $x] \
+                   [$canvas canvasy $y] 20]
+        set vp [$canvas find withtag viewport]
+        set vpindex [lsearch -exact $items $vp]
+        if {$vpindex >= 0} {
+            set items [lreplace $items $vpindex $vpindex]
+        }
+        if {[llength $items] == 0} {return}
+        if {$options(-deleteitems) ne ""} {
+            set X [expr {[winfo rootx $canvas]+$x}]
+            set Y [expr {[winfo rooty $canvas]+$y}]
+            uplevel #0 $options(-deleteitems) $items $X $Y
         }
     }
 }

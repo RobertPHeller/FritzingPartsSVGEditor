@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:52:32 2019
-#  Last Modified : <190509.1847>
+#  Last Modified : <190511.0842>
 #
 #  Description	
 #
@@ -546,7 +546,9 @@ snit::widgetadaptor SchematicEditor {
     
     constructor {args} {
         installhull using FritzingPartsEditor -parent $win -bg white \
-              -contextmenu [mymethod _canvasContextMenu]
+              -contextmenu [mymethod _canvasContextMenu] \
+              -edititems   [mymethod _editItems] \
+              -deleteitems [mymethod _deleteItems]
         $self CommonInit Schematic
         $self configurelist $args
         $hull makeVpRect
@@ -673,9 +675,9 @@ snit::widgetadaptor SchematicEditor {
         $hull delete $id
         $hull create text $x0 $y0 -anchor sw -font $font -text $_pinno \
               -fill $color -tags $pinnotags
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editPin $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid pin %X %Y]
         $self _setDirty
     }
     method addpin {} {
@@ -735,9 +737,9 @@ snit::widgetadaptor SchematicEditor {
         set outline $opts(-color)
         set width $opts(-linethickness)
         $hull create rectangle $x1 $y1 $x2 $y2 -tags $tags -fill {} -outline $outline -width $width
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
         $self _setDirty
     }
     method _editRect {gid} {
@@ -768,10 +770,10 @@ snit::widgetadaptor SchematicEditor {
         set outline $opts(-color)
         set width $opts(-linethickness)
         $hull create rectangle $x1 $y1 $x2 $y2 -tags $tags -fill {} -outline $outline -width $width
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
-        $hull bind "gid=$_gid" <Shift-KeyPress-e> [mymethod _editRect $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editRect $_gid]
+        #$hull bind "gid=$_gid" <Shift-KeyPress-e> [mymethod _editRect $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid rect %X %Y]
         $self _setDirty
     }
     method addline {} {
@@ -790,9 +792,9 @@ snit::widgetadaptor SchematicEditor {
         set outline $opts(-color)
         set width $opts(-linethickness)
         $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $outline -width $width
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
         $self _setDirty
     }
     method _editLine {gid} {
@@ -824,9 +826,9 @@ snit::widgetadaptor SchematicEditor {
         set outline $opts(-color)
         set width $opts(-linethickness)
         $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $fill -width $width
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]
         $self _setDirty
     }
     method addcirc {} {
@@ -854,9 +856,9 @@ snit::widgetadaptor SchematicEditor {
             set width [expr {$radius - $dradius}]
         }
         $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline $outline -width $width
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
         $self _setDirty
     }
     method _editCirc {gid} {
@@ -909,9 +911,9 @@ snit::widgetadaptor SchematicEditor {
             set width [expr {$radius - $dradius}]
         }
         $hull create oval $x1 $y1 $x2 $y2 -tags $tags -fill $fill -outline $outline -width $width
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editCirc $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid circ %X %Y]
         $self _setDirty
     }
     method addarc {} {
@@ -942,9 +944,9 @@ snit::widgetadaptor SchematicEditor {
         }
         
         $hull create arc $x1 $y1 $x2 $y2 -style $arcstyle -start $opts(-start) -extent $opts(-extent) -tags $tags -fill $fill -outline $outline -width $width
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
         $self _setDirty
     }
     method _editArc {gid} {
@@ -1000,9 +1002,9 @@ snit::widgetadaptor SchematicEditor {
             set arcstyle arc
         }
         $hull create arc $x1 $y1 $x2 $y2 -style $arcstyle -start $opts(-start) -extent $opts(-extent) -tags $tags -fill $fill -outline $outline -width $width
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editArc $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid arc %X %Y]
         $self _setDirty
     }
     method addtext {} {
@@ -1019,9 +1021,9 @@ snit::widgetadaptor SchematicEditor {
         set fill $opts(-color)
         set font [FontMapping MapToTk $opts(-font) $opts(-size)]
         $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor sw
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
         $self _setDirty
     }
     method _editText {gid} {
@@ -1050,9 +1052,9 @@ snit::widgetadaptor SchematicEditor {
         set fill $opts(-color)
         set font [FontMapping MapToTk $opts(-font) $opts(-size)]
         $hull create text $x $y -text $opts(-text) -font $font -tags $tags -fill $fill -anchor sw
-        $hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
-        $hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
-        $hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
+        #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
+        #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editText $_gid]
+        #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid text %X %Y]
         $self _setDirty
     }
     method read {filename} {
