@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 08:13:34 2019
-#  Last Modified : <190510.0951>
+#  Last Modified : <190511.1108>
 #
 #  Description	
 #
@@ -63,11 +63,11 @@ FritzingPartsSVGEditorModules = Scripts/FritzingPartsBreadboardEditor.tcl \
 				Scripts/FritzingPartsPCBEditor.tcl \
 				Scripts/FritzingPartsEditor.tcl
 
-FritzingPartsSVGEditorLib = $(wildcard Scripts/*.tcl) \
-			    $(wildcard Scripts/*.gif) \
-			    $(wildcard Scripts/*.png) \
-			    $(wildcard Scripts/*.xbm) \
-			    $(wildcard Scripts/*.xpm)
+FritzingPartsSVGEditorLib = $(wildcard $(srcdir)/Scripts/*.tcl) \
+			    $(wildcard $(srcdir)/Scripts/*.gif) \
+			    $(wildcard $(srcdir)/Scripts/*.png) \
+			    $(wildcard $(srcdir)/Scripts/*.xbm) \
+			    $(wildcard $(srcdir)/Scripts/*.xpm)
 
 bin_SCRIPTS = FritzingPartsSVGEditor$(EXEEXT)
 man_MANS = man1/FritzingPartsSVGEditor.1

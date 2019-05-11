@@ -1,4 +1,4 @@
-AC_INIT(FritzingPartsSVGEditor,0.0.1,[support@deepsoft.com], FritzingPartsSVGEditor)
+AC_INIT(FritzingPartsSVGEditor,0.0.2,[support@deepsoft.com], FritzingPartsSVGEditor)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_SUBST(build)
