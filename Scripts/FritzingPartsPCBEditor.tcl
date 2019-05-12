@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:53:10 2019
-#  Last Modified : <190511.0844>
+#  Last Modified : <190512.1104>
 #
 #  Description	
 #
@@ -435,7 +435,8 @@ namespace eval PCB {
             pack $sizeLE -expand yes -fill x
             set fontLE [LabelComboBox $frame.fontLE \
                         -textvariable [myvar options(-font)] \
-                        -label "Font" -values [::FontName cget -values]]
+                        -label "Font" -values [::FontName cget -values] \
+                        -editable no]
             pack $fontLE -expand yes -fill x
             set textLE [LabelEntry $frame.textLE \
                         -textvariable [myvar options(-text)] \

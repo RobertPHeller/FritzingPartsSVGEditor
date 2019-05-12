@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:52:32 2019
-#  Last Modified : <190511.2205>
+#  Last Modified : <190512.1104>
 #
 #  Description	
 #
@@ -146,7 +146,9 @@ namespace eval Schematic {
             pack $yposLE -expand yes -fill x
             set orientationLE [LabelComboBox $frame.orientationLE \
                                -textvariable [myvar options(-orientation)] \
-                               -label "Orientation" -values [Schematic::PinOrient cget -values]]
+                               -label "Orientation" \
+                               -values [Schematic::PinOrient cget -values] \
+                               -editable no]
             pack $orientationLE -expand yes -fill x
             set lengthLE [LabelSpinBox $frame.lengthLE \
                           -textvariable [myvar options(-length)] \
@@ -177,7 +179,9 @@ namespace eval Schematic {
             pack $sizeLE -expand yes -fill x
             set fontLE [LabelComboBox $frame.fontLE \
                         -textvariable [myvar options(-font)] \
-                        -label "Label and Number Font" -values [::FontName cget -values]]
+                        -label "Label and Number Font" \
+                        -values [::FontName cget -values] \
+                        -editable no]
             pack $fontLE -expand yes -fill x
             install attributes using ::AttributesBox $frame.attributes 
             pack $attributes -expand yes -fill both
@@ -501,7 +505,8 @@ namespace eval Schematic {
             pack $sizeLE -expand yes -fill x
             set fontLE [LabelComboBox $frame.fontLE \
                         -textvariable [myvar options(-font)] \
-                        -label "Font" -values [::FontName cget -values]]
+                        -label "Font" -values [::FontName cget -values] \
+                        -editable no]
             pack $fontLE -expand yes -fill x
             set textLE [LabelEntry $frame.textLE \
                         -textvariable [myvar options(-text)] \
