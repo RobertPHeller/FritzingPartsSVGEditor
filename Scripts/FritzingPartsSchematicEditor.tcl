@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:52:32 2019
-#  Last Modified : <190511.0842>
+#  Last Modified : <190511.2205>
 #
 #  Description	
 #
@@ -706,8 +706,9 @@ snit::widgetadaptor SchematicEditor {
             regexp {^length:(.*)$} $t => opts(-length)
             regexp {^inverted:(.*)$} $t => opts(-inverted)
         }
+        
         foreach i [$hull find withtag $matchtagO] {
-            if {[$hull type $i] eq "oval"} {
+            if {[$hull type $i] eq "line"} {
                 set opts(-color) [$hull itemcget $i -fill]
             }
             if {[$hull type $i] eq "line"} {
