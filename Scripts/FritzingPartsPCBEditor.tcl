@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:53:10 2019
-#  Last Modified : <190512.1104>
+#  Last Modified : <190928.1052>
 #
 #  Description	
 #
@@ -648,9 +648,9 @@ snit::widgetadaptor PCBEditor {
         set y1 $opts(-y1)
         set x2 $opts(-x2)
         set y2 $opts(-y2)
-        set outline #FFFFFF
+        set fill #FFFFFF
         set width $opts(-linethickness)
-        $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $outline -width $width
+        $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $fill -width $width
         #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
         #$hull bind "gid=$_gid" <KeyPress-e> [mymethod _editLine $_gid]
         #$hull bind "gid=$_gid" <Button-3> [mymethod _itemContextMenu $_gid line %X %Y]

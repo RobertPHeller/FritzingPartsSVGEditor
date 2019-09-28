@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 14:52:32 2019
-#  Last Modified : <190512.1104>
+#  Last Modified : <190908.1846>
 #
 #  Description	
 #
@@ -812,7 +812,7 @@ snit::widgetadaptor SchematicEditor {
         set opts(-x2) $x2
         set opts(-y2) $y2
         set opts(-linethickness) [$hull itemcget $tag -width]
-        set opts(-color) [$hull itemcget $tag -outline]
+        set opts(-color) [$hull itemcget $tag -fill]
         set tags [$hull itemcget $tag -tags]
         set attrs [getattrsfromtags $tags]
         set opts(-attributes) $attrs
@@ -829,7 +829,7 @@ snit::widgetadaptor SchematicEditor {
         set y1 $opts(-y1)
         set x2 $opts(-x2)
         set y2 $opts(-y2)
-        set outline $opts(-color)
+        set fill $opts(-color)
         set width $opts(-linethickness)
         $hull create line $x1 $y1 $x2 $y2 -tags $tags -fill $fill -width $width
         #$hull bind "gid=$_gid" <KeyPress-Delete> [mymethod _delete $_gid]
