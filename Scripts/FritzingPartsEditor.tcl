@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun May 5 15:59:34 2019
-#  Last Modified : <190511.0959>
+#  Last Modified : <190513.1447>
 #
 #  Description	
 #
@@ -377,9 +377,9 @@ snit::macro CommonEditorFunctions {} {
         set xc $m
         set yc $n
         
-        set a1 [$type _RadiansToDegrees [expr {-atan2($y1-$yc,$x1-$xc)}]]
+        set a1 [_degrees [expr {-atan2($y1-$yc,$x1-$xc)}]]
         #  puts stderr "*** CTCPanel::CurvedBlock_Create: a1 = $a1"
-        set a2 [$type _RadiansToDegrees [expr {-atan2($y2-$yc,$x2-$xc)}]]
+        set a2 [_degrees [expr {-atan2($y2-$yc,$x2-$xc)}]]
         #  puts stderr "*** CTCPanel::CurvedBlock_Create: (1) a2 = $a2 ([expr $a2 - $a1])"
         if {$a2 < 0} {set a2 [expr $a2 + 360]}
         #  puts stderr "*** CTCPanel::CurvedBlock_Create: (2) a2 = $a2 ([expr $a2 - $a1])"
